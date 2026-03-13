@@ -3,8 +3,6 @@ import { useEffect, useState, useCallback } from 'react';
 
 const API_BACKEND = import.meta.env.VITE_API_BACKEND || 'https://protective-mainstream-pretty-frames.trycloudflare.com';
 
-type Tab = 'register' | 'dashboard' | 'docs';
-
 interface UserInfo {
   id: number;
   email: string;
@@ -30,8 +28,9 @@ interface UsageDay {
   cost: number;
 }
 
+type CodeLang = 'python' | 'curl' | 'javascript';
+
 export function APIPage() {
-  const [tab, setTab] = useState<Tab>('register');
   const [user, setUser] = useState<UserInfo | null>(null);
   const [keys, setKeys] = useState<APIKey[]>([]);
   const [usage, setUsage] = useState<UsageDay[]>([]);
@@ -39,6 +38,7 @@ export function APIPage() {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [codeLang, setCodeLang] = useState<CodeLang>('python');
 
   // Form state
   const [email, setEmail] = useState('');
@@ -72,7 +72,6 @@ export function APIPage() {
         if (balRes.status === 401) {
           setError('Invalid API key. Please log in again.');
           saveSessionKey('');
-          setTab('register');
           return;
         }
         throw new Error('Failed to fetch');
@@ -98,7 +97,6 @@ export function APIPage() {
 
   useEffect(() => {
     if (sessionKey) {
-      setTab('dashboard');
       fetchDashboard();
     }
   }, [sessionKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -122,7 +120,6 @@ export function APIPage() {
         setKeys(data.api_keys || []);
         if (data.session_key) {
           saveSessionKey(data.session_key);
-          setTab('dashboard');
         } else {
           setError('Logged in. Enter one of your API keys below to access the dashboard.');
         }
@@ -138,7 +135,6 @@ export function APIPage() {
         setUser(data.user);
         setNewKey(data.api_key.key);
         saveSessionKey(data.api_key.key);
-        setTab('dashboard');
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -183,58 +179,73 @@ export function APIPage() {
     setUser(null);
     setKeys([]);
     setNewKey(null);
-    setTab('register');
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="pt-28 pb-20 px-6 lg:px-16 max-w-5xl mx-auto"
-    >
-      <h1 className="font-serif text-3xl text-g3-text mb-2">API Access</h1>
-      <p className="text-g3-text-secondary text-sm mb-8">
-        Get an API key to access the Constantinople inference network. OpenAI-compatible endpoints.
-      </p>
+  const codeExamples: Record<CodeLang, { label: string; code: string }> = {
+    python: {
+      label: 'Python',
+      code: `from openai import OpenAI
 
-      {/* Tab bar */}
-      <div className="flex gap-1 mb-8 border-b border-white/[0.08] pb-px">
-        {[
-          { id: 'register' as Tab, label: sessionKey ? 'Account' : 'Get Started' },
-          { id: 'dashboard' as Tab, label: 'Dashboard' },
-          { id: 'docs' as Tab, label: 'Quick Start' },
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-sans transition-colors border-b-2 -mb-px ${
-              tab === t.id
-                ? 'text-g3-text border-white/40'
-                : 'text-g3-text-secondary border-transparent hover:text-g3-text'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-        {sessionKey && (
-          <button
-            onClick={handleLogout}
-            className="ml-auto px-3 py-1 text-xs text-g3-text-secondary hover:text-red-400 transition-colors"
-          >
-            Logout
-          </button>
+client = OpenAI(
+    base_url="${API_BACKEND}/v1",
+    api_key="${sessionKey || 'cst-your-key-here'}"
+)
+
+response = client.chat.completions.create(
+    model="Qwen/Qwen2.5-7B-Instruct",
+    messages=[{"role": "user", "content": "What is Constantinople?"}],
+    max_tokens=200,
+)
+print(response.choices[0].message.content)`,
+    },
+    curl: {
+      label: 'cURL',
+      code: `curl ${API_BACKEND}/v1/chat/completions \\
+  -H "Authorization: Bearer ${sessionKey || 'cst-your-key-here'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "max_tokens": 100
+  }'`,
+    },
+    javascript: {
+      label: 'JavaScript',
+      code: `import OpenAI from 'openai';
+
+const client = new OpenAI({
+  baseURL: '${API_BACKEND}/v1',
+  apiKey: '${sessionKey || 'cst-your-key-here'}',
+});
+
+const completion = await client.chat.completions.create({
+  model: 'Qwen/Qwen2.5-7B-Instruct',
+  messages: [{ role: 'user', content: 'What is decentralized inference?' }],
+});
+console.log(completion.choices[0].message.content);`,
+    },
+  };
+
+  // ─── Not logged in: sign up / sign in ───
+  if (!sessionKey) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="pt-28 pb-20 px-6 lg:px-16 max-w-5xl mx-auto"
+      >
+        <h1 className="font-serif text-3xl text-g3-text mb-2">API Access</h1>
+        <p className="text-g3-text-secondary text-sm mb-8">
+          Get an API key to access the Constantinople inference network. OpenAI-compatible endpoints.
+        </p>
+
+        {error && (
+          <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
+            {error}
+            <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-300">x</button>
+          </div>
         )}
-      </div>
 
-      {error && (
-        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-300">x</button>
-        </div>
-      )}
-
-      {/* Register / Login */}
-      {tab === 'register' && !sessionKey && (
         <div className="max-w-md">
           <h2 className="font-serif text-xl text-g3-text mb-4">{isLogin ? 'Sign In' : 'Create Account'}</h2>
           <form onSubmit={handleAuth} className="space-y-4">
@@ -323,288 +334,259 @@ export function APIPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Dashboard */}
-      {tab === 'dashboard' && sessionKey && (
-        <div className="space-y-6">
-          {/* New key alert */}
-          {newKey && (
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-              <p className="text-sm text-emerald-300 mb-2 font-semibold">Your new API key (save it now — won't be shown again):</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-3 py-2 bg-black/30 rounded font-mono text-sm text-g3-text break-all select-all">
-                  {newKey}
-                </code>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(newKey); }}
-                  className="px-3 py-2 bg-white/10 border border-white/20 rounded text-sm text-g3-text hover:bg-white/15"
-                >
-                  Copy
-                </button>
-              </div>
-              <button onClick={() => setNewKey(null)} className="mt-2 text-xs text-g3-text-secondary hover:text-g3-text">
-                Dismiss
-              </button>
-            </div>
-          )}
-
-          {/* Balance + usage summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Balance" value={`$${(user?.balance ?? 0).toFixed(4)}`} />
-            <StatCard label="Requests (30d)" value={totalUsage.requests.toLocaleString()} />
-            <StatCard label="Tokens Used" value={`${((totalUsage.inputTokens + totalUsage.outputTokens) / 1000).toFixed(1)}K`} />
-            <StatCard label="Cost (30d)" value={`$${totalUsage.cost.toFixed(4)}`} />
-          </div>
-
-          {/* API Keys */}
-          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-g3-text">API Keys</h3>
-              <button
-                onClick={handleCreateKey}
-                className="px-3 py-1.5 bg-white/10 border border-white/20 rounded text-xs text-g3-text hover:bg-white/15 transition-colors"
-              >
-                + New Key
-              </button>
-            </div>
-            {keys.length === 0 ? (
-              <p className="text-sm text-g3-text-secondary">No API keys yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {keys.map(k => (
-                  <div key={k.id} className="flex items-center justify-between p-2 bg-white/[0.02] rounded">
-                    <div className="flex items-center gap-3">
-                      <code className="text-sm font-mono text-g3-text">{k.key_prefix}</code>
-                      <span className="text-xs text-g3-text-secondary">{k.name}</span>
-                      <span className={`text-xs ${k.is_active ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {k.is_active ? 'Active' : 'Revoked'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {k.last_used_at && (
-                        <span className="text-xs text-g3-text-secondary">
-                          Last used: {new Date(k.last_used_at).toLocaleDateString()}
-                        </span>
-                      )}
-                      {k.is_active ? (
-                        <button
-                          onClick={() => handleRevokeKey(k.id)}
-                          className="text-xs text-red-400/70 hover:text-red-400 transition-colors"
-                        >
-                          Revoke
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Usage chart */}
-          {usage.length > 0 && (
-            <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-              <h3 className="text-sm font-semibold text-g3-text mb-3">Usage (Last 30 Days)</h3>
-              <div className="space-y-1">
-                {usage.slice(0, 14).map(d => {
-                  const maxReqs = Math.max(...usage.map(u => u.requests), 1);
-                  const pct = (d.requests / maxReqs) * 100;
-                  return (
-                    <div key={d.date} className="flex items-center gap-3 text-xs">
-                      <span className="w-20 text-g3-text-secondary font-mono">{d.date.slice(5)}</span>
-                      <div className="flex-1 bg-white/[0.04] rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full bg-white/20 rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="w-16 text-right text-g3-text-secondary">{d.requests} reqs</span>
-                      <span className="w-20 text-right font-mono text-g3-text">${d.cost.toFixed(4)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Add Credits */}
-          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-            <h3 className="text-sm font-semibold text-g3-text mb-2">Add Credits</h3>
-            <p className="text-sm text-g3-text-secondary mb-3">
-              1 credit = $1 USD. Pay with USDC on Base (low fees) or card.
-            </p>
-
-            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Crypto (USDC on Base)</h4>
-            <div className="flex gap-2 flex-wrap mb-3">
-              {[5, 10, 25, 100].map(amt => (
-                <button
-                  key={amt}
-                  className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
-                  onClick={async () => {
-                    setError(null);
-                    try {
-                      const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${sessionKey}`,
-                        },
-                        body: JSON.stringify({ amount: amt, payment_method: 'crypto' }),
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.detail || 'Failed');
-                      setError(`Invoice created: Send $${amt} USDC on Base to ${data.deposit_address || 'see invoice'}. Invoice ID: ${data.invoice_id}. Credits will be added after confirmation.`);
-                    } catch (err: unknown) {
-                      setError(err instanceof Error ? err.message : 'Payment failed');
-                    }
-                  }}
-                >
-                  ${amt} USDC
-                </button>
-              ))}
-            </div>
-
-            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Card (Stripe)</h4>
-            <div className="flex gap-2 flex-wrap">
-              {[10, 25, 50, 100].map(amt => (
-                <button
-                  key={`card-${amt}`}
-                  className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
-                  onClick={async () => {
-                    setError(null);
-                    try {
-                      const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${sessionKey}`,
-                        },
-                        body: JSON.stringify({ amount: amt, payment_method: 'stripe' }),
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.detail || 'Failed');
-                      if (data.checkout_url) {
-                        window.open(data.checkout_url, '_blank');
-                      }
-                    } catch (err: unknown) {
-                      setError(err instanceof Error ? err.message : 'Payment failed');
-                    }
-                  }}
-                >
-                  ${amt}
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-g3-text-secondary">
-              Base USDC has minimal fees (~$0.01). Ethereum USDC also accepted (higher gas).
-            </p>
-          </div>
-        </div>
-      )}
-
-      {tab === 'dashboard' && !sessionKey && (
-        <div className="text-center py-12">
-          <p className="text-g3-text-secondary mb-4">Sign in to view your dashboard</p>
-          <button
-            onClick={() => setTab('register')}
-            className="px-6 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-g3-text hover:bg-white/15 transition-colors"
-          >
-            Get Started
-          </button>
-        </div>
-      )}
-
-      {/* Quick Start Docs */}
-      {tab === 'docs' && (
-        <div className="max-w-3xl space-y-6">
-          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-            <h3 className="text-sm font-semibold text-g3-text mb-3">Quick Start</h3>
-            <p className="text-sm text-g3-text-secondary mb-3">
-              Constantinople exposes an OpenAI-compatible API. Use any OpenAI SDK or HTTP client.
-            </p>
-            {sessionKey && (
-              <div className="mb-4 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-300">
-                Your API key is pre-filled in the examples below.
-              </div>
-            )}
-
-            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2 mt-4">Python</h4>
-            <CodeBlock code={`from openai import OpenAI
-
-client = OpenAI(
-    base_url="${API_BACKEND}/v1",
-    api_key="${sessionKey || 'cst-your-key-here'}"
-)
-
-response = client.chat.completions.create(
-    model="Qwen/Qwen2.5-7B-Instruct",
-    messages=[{"role": "user", "content": "What is Constantinople?"}],
-    max_tokens=200,
-)
-print(response.choices[0].message.content)`} />
-
-            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2 mt-4">cURL</h4>
-            <CodeBlock code={`curl ${API_BACKEND}/v1/chat/completions \\
-  -H "Authorization: Bearer ${sessionKey || 'cst-your-key-here'}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "model": "Qwen/Qwen2.5-7B-Instruct",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "max_tokens": 100
-  }'`} />
-
-            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2 mt-4">JavaScript</h4>
-            <CodeBlock code={`import OpenAI from 'openai';
-
-const client = new OpenAI({
-  baseURL: '${API_BACKEND}/v1',
-  apiKey: '${sessionKey || 'cst-your-key-here'}',
-});
-
-const completion = await client.chat.completions.create({
-  model: 'Qwen/Qwen2.5-7B-Instruct',
-  messages: [{ role: 'user', content: 'What is decentralized inference?' }],
-});
-console.log(completion.choices[0].message.content);`} />
-          </div>
-
-          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-            <h3 className="text-sm font-semibold text-g3-text mb-2">Available Endpoints</h3>
-            <div className="space-y-2 text-sm">
-              <EndpointRow method="POST" path="/v1/chat/completions" desc="Chat completions (OpenAI-compatible)" />
-              <EndpointRow method="POST" path="/v1/completions" desc="Text completions" />
-              <EndpointRow method="POST" path="/v1/embeddings" desc="Text embeddings" />
-              <EndpointRow method="GET" path="/v1/models" desc="List available models" />
-              <EndpointRow method="GET" path="/v1/user/balance" desc="Check credit balance" />
-              <EndpointRow method="GET" path="/v1/user/usage" desc="Usage analytics" />
-              <EndpointRow method="GET" path="/v1/pricing" desc="Current pricing" />
-              <EndpointRow method="GET" path="/v1/user/transactions" desc="Transaction history" />
-              <EndpointRow method="GET" path="/v1/billing/invoices" desc="Payment invoices" />
-              <EndpointRow method="GET" path="/health" desc="API health status" />
-            </div>
-          </div>
-
-          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-            <h3 className="text-sm font-semibold text-g3-text mb-2">Response Format</h3>
-            <p className="text-sm text-g3-text-secondary mb-2">
-              Every inference response includes an <code className="text-g3-text">x_billing</code> field:
-            </p>
-            <CodeBlock code={`{
-  "id": "chatcmpl-...",
-  "choices": [...],
-  "usage": { "prompt_tokens": 36, "completion_tokens": 9 },
-  "x_billing": {
-    "request_id": "abc123",
-    "cost": 0.000031,
-    "balance_remaining": 0.9842,
-    "input_tokens": 36,
-    "output_tokens": 9
+      </motion.div>
+    );
   }
-}`} />
-          </div>
+
+  // ─── Logged in: single dashboard + quick start ───
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="pt-28 pb-20 px-6 lg:px-16 max-w-5xl mx-auto"
+    >
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-serif text-3xl text-g3-text mb-1">Dashboard</h1>
+          <p className="text-g3-text-secondary text-sm">
+            {user?.email || 'Your account'}
+          </p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm text-g3-text-secondary hover:text-red-400 border border-white/[0.08] rounded-lg transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
+          {error}
+          <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-300">x</button>
         </div>
       )}
+
+      <div className="space-y-6">
+        {/* New key alert */}
+        {newKey && (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+            <p className="text-sm text-emerald-300 mb-2 font-semibold">Your new API key (save it now — won't be shown again):</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-2 bg-black/30 rounded font-mono text-sm text-g3-text break-all select-all">
+                {newKey}
+              </code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(newKey); }}
+                className="px-3 py-2 bg-white/10 border border-white/20 rounded text-sm text-g3-text hover:bg-white/15"
+              >
+                Copy
+              </button>
+            </div>
+            <button onClick={() => setNewKey(null)} className="mt-2 text-xs text-g3-text-secondary hover:text-g3-text">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Balance + usage summary */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Balance" value={`$${(user?.balance ?? 0).toFixed(4)}`} />
+          <StatCard label="Requests (30d)" value={totalUsage.requests.toLocaleString()} />
+          <StatCard label="Tokens Used" value={`${((totalUsage.inputTokens + totalUsage.outputTokens) / 1000).toFixed(1)}K`} />
+          <StatCard label="Cost (30d)" value={`$${totalUsage.cost.toFixed(4)}`} />
+        </div>
+
+        {/* Quick Start — tabbed code examples */}
+        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+          <h3 className="text-sm font-semibold text-g3-text mb-3">Quick Start</h3>
+          <p className="text-sm text-g3-text-secondary mb-3">
+            Constantinople exposes an OpenAI-compatible API. Use any OpenAI SDK or HTTP client.
+          </p>
+          <div className="mb-4 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-300">
+            Your API key is pre-filled in the examples below.
+          </div>
+
+          {/* Language tabs */}
+          <div className="flex gap-1 mb-3 border-b border-white/[0.08] pb-px">
+            {(['python', 'curl', 'javascript'] as CodeLang[]).map(lang => (
+              <button
+                key={lang}
+                onClick={() => setCodeLang(lang)}
+                className={`px-3 py-1.5 text-xs font-mono transition-colors border-b-2 -mb-px ${
+                  codeLang === lang
+                    ? 'text-g3-text border-white/40'
+                    : 'text-g3-text-secondary border-transparent hover:text-g3-text'
+                }`}
+              >
+                {codeExamples[lang].label}
+              </button>
+            ))}
+          </div>
+          <CodeBlock code={codeExamples[codeLang].code} />
+        </div>
+
+        {/* API Keys */}
+        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-g3-text">API Keys</h3>
+            <button
+              onClick={handleCreateKey}
+              className="px-3 py-1.5 bg-white/10 border border-white/20 rounded text-xs text-g3-text hover:bg-white/15 transition-colors"
+            >
+              + New Key
+            </button>
+          </div>
+          {keys.length === 0 ? (
+            <p className="text-sm text-g3-text-secondary">No API keys yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {keys.map(k => (
+                <div key={k.id} className="flex items-center justify-between p-2 bg-white/[0.02] rounded">
+                  <div className="flex items-center gap-3">
+                    <code className="text-sm font-mono text-g3-text">{k.key_prefix}</code>
+                    <span className="text-xs text-g3-text-secondary">{k.name}</span>
+                    <span className={`text-xs ${k.is_active ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {k.is_active ? 'Active' : 'Revoked'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {k.last_used_at && (
+                      <span className="text-xs text-g3-text-secondary">
+                        Last used: {new Date(k.last_used_at).toLocaleDateString()}
+                      </span>
+                    )}
+                    {k.is_active ? (
+                      <button
+                        onClick={() => handleRevokeKey(k.id)}
+                        className="text-xs text-red-400/70 hover:text-red-400 transition-colors"
+                      >
+                        Revoke
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Usage chart */}
+        {usage.length > 0 && (
+          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+            <h3 className="text-sm font-semibold text-g3-text mb-3">Usage (Last 30 Days)</h3>
+            <div className="space-y-1">
+              {usage.slice(0, 14).map(d => {
+                const maxReqs = Math.max(...usage.map(u => u.requests), 1);
+                const pct = (d.requests / maxReqs) * 100;
+                return (
+                  <div key={d.date} className="flex items-center gap-3 text-xs">
+                    <span className="w-20 text-g3-text-secondary font-mono">{d.date.slice(5)}</span>
+                    <div className="flex-1 bg-white/[0.04] rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-full bg-white/20 rounded-full transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="w-16 text-right text-g3-text-secondary">{d.requests} reqs</span>
+                    <span className="w-20 text-right font-mono text-g3-text">${d.cost.toFixed(4)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Add Credits */}
+        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+          <h3 className="text-sm font-semibold text-g3-text mb-2">Add Credits</h3>
+          <p className="text-sm text-g3-text-secondary mb-3">
+            1 credit = $1 USD. Pay with USDC on Base (low fees) or card.
+          </p>
+
+          <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Crypto (USDC on Base)</h4>
+          <div className="flex gap-2 flex-wrap mb-3">
+            {[5, 10, 25, 100].map(amt => (
+              <button
+                key={amt}
+                className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionKey}`,
+                      },
+                      body: JSON.stringify({ amount: amt, payment_method: 'crypto' }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || 'Failed');
+                    setError(`Invoice created: Send $${amt} USDC on Base to ${data.deposit_address || 'see invoice'}. Invoice ID: ${data.invoice_id}. Credits will be added after confirmation.`);
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : 'Payment failed');
+                  }
+                }}
+              >
+                ${amt} USDC
+              </button>
+            ))}
+          </div>
+
+          <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Card (Stripe)</h4>
+          <div className="flex gap-2 flex-wrap">
+            {[10, 25, 50, 100].map(amt => (
+              <button
+                key={`card-${amt}`}
+                className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionKey}`,
+                      },
+                      body: JSON.stringify({ amount: amt, payment_method: 'stripe' }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || 'Failed');
+                    if (data.checkout_url) {
+                      window.open(data.checkout_url, '_blank');
+                    }
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : 'Payment failed');
+                  }
+                }}
+              >
+                ${amt}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-g3-text-secondary">
+            Base USDC has minimal fees (~$0.01). Ethereum USDC also accepted (higher gas).
+          </p>
+        </div>
+
+        {/* Endpoints reference */}
+        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+          <h3 className="text-sm font-semibold text-g3-text mb-2">Available Endpoints</h3>
+          <div className="space-y-2 text-sm">
+            <EndpointRow method="POST" path="/v1/chat/completions" desc="Chat completions (OpenAI-compatible)" />
+            <EndpointRow method="POST" path="/v1/completions" desc="Text completions" />
+            <EndpointRow method="POST" path="/v1/embeddings" desc="Text embeddings" />
+            <EndpointRow method="GET" path="/v1/models" desc="List available models" />
+            <EndpointRow method="GET" path="/v1/user/balance" desc="Check credit balance" />
+            <EndpointRow method="GET" path="/v1/user/usage" desc="Usage analytics" />
+            <EndpointRow method="GET" path="/v1/pricing" desc="Current pricing" />
+            <EndpointRow method="GET" path="/v1/user/transactions" desc="Transaction history" />
+            <EndpointRow method="GET" path="/v1/billing/invoices" desc="Payment invoices" />
+            <EndpointRow method="GET" path="/health" desc="API health status" />
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -625,7 +607,6 @@ function CodeBlock({ code }: { code: string }) {
       await navigator.clipboard.writeText(code);
       setCopied(true);
     } catch {
-      // Fallback: create a temporary textarea for copying
       const ta = document.createElement('textarea');
       ta.value = code;
       ta.style.position = 'fixed';
