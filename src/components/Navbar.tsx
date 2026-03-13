@@ -32,17 +32,17 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
       transition={{ duration: 0.6, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
       className="fixed top-0 left-0 right-0 z-50 h-20"
     >
-      <div className="h-full px-8 lg:px-16 flex items-center justify-between">
+      <div className="h-full px-8 lg:px-16 flex items-center justify-between relative">
         <button
           onClick={() => onNavigate('home')}
-          className="flex items-center gap-2 cursor-pointer"
+          className="flex items-center gap-2 cursor-pointer z-10"
         >
           <span className="font-serif text-lg font-bold text-g3-text tracking-tight">Constantinople</span>
           <span className="text-g3-text-muted">|</span>
           <span className="font-sans text-sm text-g3-text-secondary tracking-wide">SN97</span>
         </button>
 
-        <nav className="hidden lg:flex items-center gap-8">
+        <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {navItems.map((item) => (
             <button
               key={item.page}
@@ -60,7 +60,7 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
 
         <button
           onClick={() => onNavigate('api')}
-          className="hidden lg:block px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text hover:bg-white/10 hover:border-white/40 transition-all duration-250 tracking-wide"
+          className="hidden lg:block px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text hover:bg-white/10 hover:border-white/40 transition-all duration-250 tracking-wide z-10"
         >
           {isLoggedIn ? 'Dashboard' : 'API Key'}
         </button>
