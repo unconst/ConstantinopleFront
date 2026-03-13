@@ -345,11 +345,12 @@ console.log(completion.choices[0].message.content);`,
       animate={{ opacity: 1, y: 0 }}
       className="pt-28 pb-20 px-6 lg:px-16 max-w-5xl mx-auto"
     >
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-3xl text-g3-text mb-1">Dashboard</h1>
           <p className="text-g3-text-secondary text-sm">
-            {user?.email || 'Your account'}
+            {user?.email || 'Your account'} &middot; <span className="font-mono">${(user?.balance ?? 0).toFixed(2)}</span> credits
           </p>
         </div>
         <button
@@ -367,45 +368,33 @@ console.log(completion.choices[0].message.content);`,
         </div>
       )}
 
-      <div className="space-y-6">
-        {/* New key alert */}
-        {newKey && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-            <p className="text-sm text-emerald-300 mb-2 font-semibold">Your new API key (save it now — won't be shown again):</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 px-3 py-2 bg-black/30 rounded font-mono text-sm text-g3-text break-all select-all">
-                {newKey}
-              </code>
-              <button
-                onClick={() => { navigator.clipboard.writeText(newKey); }}
-                className="px-3 py-2 bg-white/10 border border-white/20 rounded text-sm text-g3-text hover:bg-white/15"
-              >
-                Copy
-              </button>
-            </div>
-            <button onClick={() => setNewKey(null)} className="mt-2 text-xs text-g3-text-secondary hover:text-g3-text">
-              Dismiss
+      {newKey && (
+        <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+          <p className="text-sm text-emerald-300 mb-2 font-semibold">Save your API key now — it won't be shown again:</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 px-3 py-2 bg-black/30 rounded font-mono text-sm text-g3-text break-all select-all">
+              {newKey}
+            </code>
+            <button
+              onClick={() => { navigator.clipboard.writeText(newKey); }}
+              className="px-3 py-2 bg-white/10 border border-white/20 rounded text-sm text-g3-text hover:bg-white/15"
+            >
+              Copy
             </button>
           </div>
-        )}
-
-        {/* Balance + usage summary */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Balance" value={`$${(user?.balance ?? 0).toFixed(4)}`} />
-          <StatCard label="Requests (30d)" value={totalUsage.requests.toLocaleString()} />
-          <StatCard label="Tokens Used" value={`${((totalUsage.inputTokens + totalUsage.outputTokens) / 1000).toFixed(1)}K`} />
-          <StatCard label="Cost (30d)" value={`$${totalUsage.cost.toFixed(4)}`} />
+          <button onClick={() => setNewKey(null)} className="mt-2 text-xs text-g3-text-secondary hover:text-g3-text">
+            Dismiss
+          </button>
         </div>
+      )}
 
+      <div className="space-y-6">
         {/* Quick Start — tabbed code examples */}
-        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-          <h3 className="text-sm font-semibold text-g3-text mb-3">Quick Start</h3>
-          <p className="text-sm text-g3-text-secondary mb-3">
-            Constantinople exposes an OpenAI-compatible API. Use any OpenAI SDK or HTTP client.
+        <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+          <h3 className="text-sm font-semibold text-g3-text mb-1">Quick Start</h3>
+          <p className="text-xs text-g3-text-secondary mb-4">
+            OpenAI-compatible API. Use any OpenAI SDK or HTTP client.
           </p>
-          <div className="mb-4 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-300">
-            Your API key is pre-filled in the examples below.
-          </div>
 
           {/* Language tabs */}
           <div className="flex gap-1 mb-3 border-b border-white/[0.08] pb-px">
@@ -426,10 +415,10 @@ console.log(completion.choices[0].message.content);`,
           <CodeBlock code={codeExamples[codeLang].code} />
         </div>
 
-        {/* API Keys */}
-        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+        {/* API Keys — compact */}
+        <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-g3-text">API Keys</h3>
+            <h3 className="text-sm font-semibold text-g3-text">Your Keys</h3>
             <button
               onClick={handleCreateKey}
               className="px-3 py-1.5 bg-white/10 border border-white/20 rounded text-xs text-g3-text hover:bg-white/15 transition-colors"
@@ -450,130 +439,113 @@ console.log(completion.choices[0].message.content);`,
                       {k.is_active ? 'Active' : 'Revoked'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {k.last_used_at && (
-                      <span className="text-xs text-g3-text-secondary">
-                        Last used: {new Date(k.last_used_at).toLocaleDateString()}
-                      </span>
-                    )}
-                    {k.is_active ? (
-                      <button
-                        onClick={() => handleRevokeKey(k.id)}
-                        className="text-xs text-red-400/70 hover:text-red-400 transition-colors"
-                      >
-                        Revoke
-                      </button>
-                    ) : null}
-                  </div>
+                  {k.is_active ? (
+                    <button
+                      onClick={() => handleRevokeKey(k.id)}
+                      className="text-xs text-red-400/70 hover:text-red-400 transition-colors"
+                    >
+                      Revoke
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Usage chart */}
-        {usage.length > 0 && (
-          <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-            <h3 className="text-sm font-semibold text-g3-text mb-3">Usage (Last 30 Days)</h3>
-            <div className="space-y-1">
-              {usage.slice(0, 14).map(d => {
-                const maxReqs = Math.max(...usage.map(u => u.requests), 1);
-                const pct = (d.requests / maxReqs) * 100;
-                return (
-                  <div key={d.date} className="flex items-center gap-3 text-xs">
-                    <span className="w-20 text-g3-text-secondary font-mono">{d.date.slice(5)}</span>
-                    <div className="flex-1 bg-white/[0.04] rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-white/20 rounded-full transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
+        {/* Usage + Credits side by side on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Usage */}
+          <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+            <h3 className="text-sm font-semibold text-g3-text mb-3">Usage (30 Days)</h3>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <StatCard label="Requests" value={totalUsage.requests.toLocaleString()} />
+              <StatCard label="Cost" value={`$${totalUsage.cost.toFixed(4)}`} />
+            </div>
+            {usage.length > 0 && (
+              <div className="space-y-1">
+                {usage.slice(0, 7).map(d => {
+                  const maxReqs = Math.max(...usage.map(u => u.requests), 1);
+                  const pct = (d.requests / maxReqs) * 100;
+                  return (
+                    <div key={d.date} className="flex items-center gap-2 text-xs">
+                      <span className="w-14 text-g3-text-secondary font-mono">{d.date.slice(5)}</span>
+                      <div className="flex-1 bg-white/[0.04] rounded-full h-1.5 overflow-hidden">
+                        <div className="h-full bg-white/20 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-10 text-right text-g3-text-secondary">{d.requests}</span>
                     </div>
-                    <span className="w-16 text-right text-g3-text-secondary">{d.requests} reqs</span>
-                    <span className="w-20 text-right font-mono text-g3-text">${d.cost.toFixed(4)}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Add Credits */}
+          <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+            <h3 className="text-sm font-semibold text-g3-text mb-3">Add Credits</h3>
+            <p className="text-xs text-g3-text-secondary mb-3">1 credit = $1 USD</p>
+
+            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">Crypto (USDC on Base)</p>
+            <div className="flex gap-2 flex-wrap mb-4">
+              {[5, 10, 25, 100].map(amt => (
+                <button
+                  key={amt}
+                  className="px-3 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-xs text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
+                  onClick={async () => {
+                    setError(null);
+                    try {
+                      const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionKey}` },
+                        body: JSON.stringify({ amount: amt, payment_method: 'crypto' }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.detail || 'Failed');
+                      setError(`Invoice created: Send $${amt} USDC on Base to ${data.deposit_address || 'see invoice'}. Invoice ID: ${data.invoice_id}`);
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : 'Payment failed');
+                    }
+                  }}
+                >
+                  ${amt}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">Card (Stripe)</p>
+            <div className="flex gap-2 flex-wrap">
+              {[10, 25, 50, 100].map(amt => (
+                <button
+                  key={`card-${amt}`}
+                  className="px-3 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-xs text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
+                  onClick={async () => {
+                    setError(null);
+                    try {
+                      const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionKey}` },
+                        body: JSON.stringify({ amount: amt, payment_method: 'stripe' }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.detail || 'Failed');
+                      if (data.checkout_url) window.open(data.checkout_url, '_blank');
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : 'Payment failed');
+                    }
+                  }}
+                >
+                  ${amt}
+                </button>
+              ))}
             </div>
           </div>
-        )}
-
-        {/* Add Credits */}
-        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-          <h3 className="text-sm font-semibold text-g3-text mb-2">Add Credits</h3>
-          <p className="text-sm text-g3-text-secondary mb-3">
-            1 credit = $1 USD. Pay with USDC on Base (low fees) or card.
-          </p>
-
-          <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Crypto (USDC on Base)</h4>
-          <div className="flex gap-2 flex-wrap mb-3">
-            {[5, 10, 25, 100].map(amt => (
-              <button
-                key={amt}
-                className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
-                onClick={async () => {
-                  setError(null);
-                  try {
-                    const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionKey}`,
-                      },
-                      body: JSON.stringify({ amount: amt, payment_method: 'crypto' }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.detail || 'Failed');
-                    setError(`Invoice created: Send $${amt} USDC on Base to ${data.deposit_address || 'see invoice'}. Invoice ID: ${data.invoice_id}. Credits will be added after confirmation.`);
-                  } catch (err: unknown) {
-                    setError(err instanceof Error ? err.message : 'Payment failed');
-                  }
-                }}
-              >
-                ${amt} USDC
-              </button>
-            ))}
-          </div>
-
-          <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Card (Stripe)</h4>
-          <div className="flex gap-2 flex-wrap">
-            {[10, 25, 50, 100].map(amt => (
-              <button
-                key={`card-${amt}`}
-                className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
-                onClick={async () => {
-                  setError(null);
-                  try {
-                    const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionKey}`,
-                      },
-                      body: JSON.stringify({ amount: amt, payment_method: 'stripe' }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.detail || 'Failed');
-                    if (data.checkout_url) {
-                      window.open(data.checkout_url, '_blank');
-                    }
-                  } catch (err: unknown) {
-                    setError(err instanceof Error ? err.message : 'Payment failed');
-                  }
-                }}
-              >
-                ${amt}
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-g3-text-secondary">
-            Base USDC has minimal fees (~$0.01). Ethereum USDC also accepted (higher gas).
-          </p>
         </div>
 
-        {/* Endpoints reference */}
-        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-          <h3 className="text-sm font-semibold text-g3-text mb-2">Available Endpoints</h3>
-          <div className="space-y-2 text-sm">
+        {/* Endpoints — collapsed by default */}
+        <details className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+          <summary className="text-sm font-semibold text-g3-text cursor-pointer select-none">Endpoints Reference</summary>
+          <div className="mt-3 space-y-2 text-sm">
             <EndpointRow method="POST" path="/v1/chat/completions" desc="Chat completions (OpenAI-compatible)" />
             <EndpointRow method="POST" path="/v1/completions" desc="Text completions" />
             <EndpointRow method="POST" path="/v1/embeddings" desc="Text embeddings" />
@@ -581,11 +553,8 @@ console.log(completion.choices[0].message.content);`,
             <EndpointRow method="GET" path="/v1/user/balance" desc="Check credit balance" />
             <EndpointRow method="GET" path="/v1/user/usage" desc="Usage analytics" />
             <EndpointRow method="GET" path="/v1/pricing" desc="Current pricing" />
-            <EndpointRow method="GET" path="/v1/user/transactions" desc="Transaction history" />
-            <EndpointRow method="GET" path="/v1/billing/invoices" desc="Payment invoices" />
-            <EndpointRow method="GET" path="/health" desc="API health status" />
           </div>
-        </div>
+        </details>
       </div>
     </motion.div>
   );

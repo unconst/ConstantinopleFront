@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useCopySkill } from '../hooks/use-copy-skill';
 
-export function Footer({ onNavigate }: { onNavigate?: (page: string) => void }) {
+export function Footer({ onNavigate }: { onNavigate?: (page: 'home' | 'dataset' | 'docs' | 'status' | 'api') => void }) {
   const { copy, copied } = useCopySkill();
 
   return (

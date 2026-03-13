@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Page } from '../App';
 
@@ -15,6 +15,15 @@ interface NavbarProps {
 
 export function Navbar({ activePage, onNavigate }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsLoggedIn(!!localStorage.getItem('cst_api_key'));
+    check();
+    window.addEventListener('storage', check);
+    const interval = setInterval(check, 1000);
+    return () => { window.removeEventListener('storage', check); clearInterval(interval); };
+  }, []);
 
   return (
     <motion.header
@@ -53,7 +62,7 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
           onClick={() => onNavigate('api')}
           className="hidden lg:block px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text hover:bg-white/10 hover:border-white/40 transition-all duration-250 tracking-wide"
         >
-          API Key
+          {isLoggedIn ? 'Dashboard' : 'API Key'}
         </button>
 
         <button
@@ -125,7 +134,7 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
                   onClick={() => { onNavigate('api'); setMobileOpen(false); }}
                   className="inline-block w-fit px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text"
                 >
-                  API Key
+                  {isLoggedIn ? 'Dashboard' : 'API Key'}
                 </button>
               </div>
             </motion.nav>
