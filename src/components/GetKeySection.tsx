@@ -58,7 +58,7 @@ export function GetKeySection() {
                 onClick={() => setRevealed(!revealed)}
               >
                 <span className="font-mono text-sm text-g3-text">
-                  {revealed ? 'sk_live_cnstnpl_a8f3k2m9x7b1c4d6e5' : 'sk_live_cnstnpl_••••••••••••••••••'}
+                  {revealed ? 'cst-a8f3k2m9x7b1c4d6e5f0g1h2i3j4k5' : 'cst-••••••••••••••••••••••••'}
                 </span>
                 <span className="font-sans text-xs text-g3-text-muted ml-3">
                   {revealed ? 'hide' : 'reveal'}

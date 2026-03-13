@@ -100,7 +100,7 @@ function App() {
       </div>
 
       <div className="relative z-10">
-        <Footer />
+        <Footer onNavigate={navigate} />
       </div>
     </main>
   );

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useCopySkill } from '../hooks/use-copy-skill';
 
-export function Footer() {
+export function Footer({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { copy, copied } = useCopySkill();
 
   return (
@@ -33,7 +33,7 @@ export function Footer() {
               <button onClick={copy} className="block font-sans text-sm text-g3-text-secondary hover:text-g3-text transition-colors duration-300">
                 {copied ? 'Copied!' : 'Copy SKILL.md'}
               </button>
-              <a href="#api" className="block font-sans text-sm text-g3-text-secondary hover:text-g3-text transition-colors duration-300">API</a>
+              <button onClick={() => { if (onNavigate) onNavigate('api'); else window.location.hash = 'api'; }} className="block font-sans text-sm text-g3-text-secondary hover:text-g3-text transition-colors duration-300">API</button>
               <a href="/llm.txt" className="block font-mono text-[13px] text-g3-text-secondary hover:text-g3-text transition-colors duration-300">/llm.txt</a>
               <a href="/agents.txt" className="block font-mono text-[13px] text-g3-text-secondary hover:text-g3-text transition-colors duration-300">/agents.txt</a>
             </div>

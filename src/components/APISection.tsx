@@ -8,7 +8,7 @@ const codeExamples: Record<(typeof tabs)[number], string> = {
 
 client = OpenAI(
     base_url="https://api.constantinople.cloud/v1",
-    api_key="unused",
+    api_key="cst-your-key-here",
 )
 
 for chunk in client.chat.completions.create(
@@ -19,6 +19,7 @@ for chunk in client.chat.completions.create(
     print(chunk.choices[0].delta.content or "", end="")`,
 
   curl: `curl https://api.constantinople.cloud/v1/chat/completions \\
+  -H "Authorization: Bearer cst-your-key-here" \\
   -H 'Content-Type: application/json' \\
   -d '{
     "model": "Qwen/Qwen2.5-7B-Instruct",
@@ -45,7 +46,7 @@ export function APISection() {
           <div className="flex items-center gap-4 mb-6">
             <div className="w-5 h-px bg-g3-text-secondary" />
             <span className="font-sans text-xs text-g3-text-secondary tracking-widest uppercase">
-              OpenAI compatible — no API key
+              OpenAI compatible
             </span>
           </div>
           <h2 className="font-serif text-4xl sm:text-5xl text-g3-text leading-tight tracking-[-0.02em] max-w-2xl">
@@ -102,7 +103,7 @@ export function APISection() {
           </div>
           <span className="font-sans text-sm text-g3-text-muted">·</span>
           <span className="font-sans text-sm text-g3-text-muted">
-            Free — no API key required
+            Free tier — 1.0 credits on signup
           </span>
           <span className="font-sans text-sm text-g3-text-muted">·</span>
           <span className="font-sans text-sm text-g3-text-muted">
