@@ -43,16 +43,14 @@ export function VideoBackground() {
 
     vA.addEventListener('canplay', () => setReady(true), { once: true });
 
-    const startAll = () => {
-      vA.play().catch(() => {});
-      vB.play().catch(() => {});
+    const tryPlay = (v: HTMLVideoElement) => {
+      v.play().catch(() => {
+        const resume = () => { v.play().catch(() => {}); document.removeEventListener('click', resume); };
+        document.addEventListener('click', resume, { once: true });
+      });
     };
 
-    if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(startAll, { timeout: 2000 });
-    } else {
-      setTimeout(startAll, 200);
-    }
+    setTimeout(() => { tryPlay(vA); tryPlay(vB); }, 100);
 
     let currentFront: 'a' | 'b' = 'a';
     const timer = setInterval(() => {
@@ -90,6 +88,7 @@ export function VideoBackground() {
     <div className="fixed inset-0 z-0 overflow-hidden bg-g3-bg">
       <video
         ref={videoA}
+        autoPlay
         muted
         loop
         playsInline
@@ -98,6 +97,7 @@ export function VideoBackground() {
       />
       <video
         ref={videoB}
+        autoPlay
         muted
         loop
         playsInline
