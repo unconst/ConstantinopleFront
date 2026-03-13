@@ -1,0 +1,18 @@
+# Constantinople
+
+Decentralized LLM inference on Bittensor Subnet 97.
+Always on. Infinite throughput. Free. No API key.
+
+## Usage
+
+Base URL: https://constantinople.cloud/v1
+Model: constantinople
+Auth: none (pass api_key="unused")
+
+```
+curl https://constantinople.cloud/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"constantinople","messages":[{"role":"user","content":"hello"}],"stream":true}'
+```
+
+Full docs: /SKILL.md

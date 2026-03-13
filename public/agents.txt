@@ -1,0 +1,16 @@
+Agent-Access: allowed
+
+Name: Constantinople
+Description: Decentralized LLM inference on Bittensor Subnet 97
+
+Model: constantinople
+API: https://constantinople.cloud/v1
+Auth: none (api_key="unused")
+Cost: free
+
+Capabilities:
+- chat
+- streaming
+
+Docs: /SKILL.md
+Manifest: /.well-known/inference.json

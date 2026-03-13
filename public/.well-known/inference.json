@@ -1,0 +1,24 @@
+{
+  "name": "Constantinople",
+  "description": "Decentralized LLM inference on Bittensor Subnet 97. Always on, infinite throughput.",
+  "network": "bittensor",
+  "subnet": 97,
+  "api_base": "https://constantinople.cloud",
+  "models": [
+    {
+      "name": "constantinople",
+      "capabilities": ["chat", "stream"],
+      "verification": "hidden_state_cosine_similarity_0.995"
+    }
+  ],
+  "auth": {
+    "type": "none",
+    "api_key": "unused"
+  },
+  "endpoints": {
+    "chat": "/v1/chat/completions",
+    "models": "/v1/models"
+  },
+  "cost": "free",
+  "docs": "/SKILL.md"
+}
