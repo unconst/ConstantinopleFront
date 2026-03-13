@@ -74,11 +74,11 @@ export function GetKeySection() {
                 </span>
               </div>
               <div className="border border-white/[0.1] rounded-lg p-6">
-                <pre className="font-mono text-[13px] text-g3-text-secondary leading-[1.8] overflow-x-auto whitespace-pre">{`curl https://constantinople.cloud/v1/chat/completions \\
-  -H "Authorization: Bearer sk_live_..." \\
+                <pre className="font-mono text-[13px] text-g3-text-secondary leading-[1.8] overflow-x-auto whitespace-pre">{`curl https://api.constantinople.cloud/v1/chat/completions \\
+  -H "Authorization: Bearer cst-your-key-here" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "model": "claude-3.7-sonnet",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
     "messages": [{"role":"user","content":"hello"}]
   }'`}</pre>
               </div>

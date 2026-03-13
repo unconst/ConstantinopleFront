@@ -529,7 +529,7 @@ export function APIPage() {
             <CodeBlock code={`from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.constantinople.cloud/v1",
+    base_url="${API_BACKEND}/v1",
     api_key="cst-your-key-here"
 )
 
@@ -541,7 +541,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)`} />
 
             <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2 mt-4">cURL</h4>
-            <CodeBlock code={`curl https://api.constantinople.cloud/v1/chat/completions \\
+            <CodeBlock code={`curl ${API_BACKEND}/v1/chat/completions \\
   -H "Authorization: Bearer cst-your-key-here" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -554,7 +554,7 @@ print(response.choices[0].message.content)`} />
             <CodeBlock code={`import OpenAI from 'openai';
 
 const client = new OpenAI({
-  baseURL: 'https://api.constantinople.cloud/v1',
+  baseURL: '${API_BACKEND}/v1',
   apiKey: 'cst-your-key-here',
 });
 

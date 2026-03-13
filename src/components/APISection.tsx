@@ -7,21 +7,21 @@ const codeExamples: Record<(typeof tabs)[number], string> = {
   Python: `from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://constantinople.cloud/v1",
+    base_url="https://api.constantinople.cloud/v1",
     api_key="unused",
 )
 
 for chunk in client.chat.completions.create(
-    model="constantinople",
+    model="Qwen/Qwen2.5-7B-Instruct",
     messages=[{"role": "user", "content": "Hello!"}],
     stream=True,
 ):
     print(chunk.choices[0].delta.content or "", end="")`,
 
-  curl: `curl https://constantinople.cloud/v1/chat/completions \\
+  curl: `curl https://api.constantinople.cloud/v1/chat/completions \\
   -H 'Content-Type: application/json' \\
   -d '{
-    "model": "constantinople",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
     "messages": [
       {"role": "user", "content": "Hello!"}
     ],
