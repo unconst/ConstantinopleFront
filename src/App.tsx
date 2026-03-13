@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/Navbar';
 import { HeroContent } from './components/HeroContent';
@@ -11,14 +11,33 @@ import { VideoBackground } from './components/VideoBackground';
 
 export type Page = 'home' | 'dataset' | 'docs' | 'status' | 'api';
 
+const validPages: Page[] = ['home', 'dataset', 'docs', 'status', 'api'];
+
+function getPageFromHash(): Page {
+  const hash = window.location.hash.slice(1);
+  if (hash && validPages.includes(hash as Page)) return hash as Page;
+  return 'home';
+}
+
 function App() {
-  const [page, setPage] = useState<Page>('home');
+  const [page, setPage] = useState<Page>(getPageFromHash);
+
+  const navigate = useCallback((p: Page) => {
+    setPage(p);
+    window.location.hash = p === 'home' ? '' : p;
+  }, []);
+
+  useEffect(() => {
+    const onHashChange = () => setPage(getPageFromHash());
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   return (
     <main className="min-h-screen bg-g3-bg relative">
       <VideoBackground />
 
-      <Navbar activePage={page} onNavigate={setPage} />
+      <Navbar activePage={page} onNavigate={navigate} />
 
       <div className="relative z-10">
         <AnimatePresence mode="wait">

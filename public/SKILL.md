@@ -1,41 +1,45 @@
 # Constantinople — Decentralized LLM Inference
 
-Constantinople is a decentralized inference subnet (Bittensor SN97).
-Always on. Infinite throughput. No API key. OpenAI-compatible.
+Constantinople is a decentralized inference subnet on Bittensor (SN97).
+Blazing fast, always-on LLM inference with hidden state verification.
+OpenAI-compatible API. Every query is audited and published as a public dataset.
 
 ## Endpoint
 
 ```
-Base URL: https://constantinople.cloud/v1
-Model: constantinople
-Auth: none (api_key="unused")
+Base URL: https://api.constantinople.cloud/v1
+Model: Qwen/Qwen2.5-7B-Instruct
+Auth: Bearer token (API key required, prefix: cst-)
 ```
 
-## Usage
+## Quick Start
+
+Get an API key at https://www.constantinople.cloud/#api — free tier includes 1.0 credits on signup.
 
 ```python
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://constantinople.cloud/v1",
-    api_key="unused",
+    base_url="https://api.constantinople.cloud/v1",
+    api_key="cst-your-key-here",
 )
 
-for chunk in client.chat.completions.create(
-    model="constantinople",
+response = client.chat.completions.create(
+    model="Qwen/Qwen2.5-7B-Instruct",
     messages=[{"role": "user", "content": "Hello!"}],
-    stream=True,
-):
-    print(chunk.choices[0].delta.content or "", end="")
+    max_tokens=200,
+)
+print(response.choices[0].message.content)
 ```
 
 ```bash
-curl https://constantinople.cloud/v1/chat/completions \
-  -H 'Content-Type: application/json' \
+curl https://api.constantinople.cloud/v1/chat/completions \
+  -H "Authorization: Bearer cst-your-key-here" \
+  -H "Content-Type: application/json" \
   -d '{
-    "model": "constantinople",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
     "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
+    "max_tokens": 200
   }'
 ```
 
@@ -43,25 +47,41 @@ curl https://constantinople.cloud/v1/chat/completions \
 
 ```
 Client → POST /v1/chat/completions (OpenAI-compatible)
-       → Validator Gateway (routes + verifies)
+       → Gateway (routes to best available miner)
        → Decentralized GPU Miners (serve inference + hidden states)
-       → Challenge Engine (cosine similarity > 0.995)
+       → Audit Validator (samples requests, verifies hidden states)
        → Scoring Engine (speed × verification × consistency)
        → On-chain weight setting via commit-reveal
 ```
 
-Miners prove they're running the model by returning hidden state vectors
+Miners prove they're running the real model by returning hidden state vectors
 that match the validator's reference within cosine similarity > 0.995.
+
+## Available Endpoints
+
+- `POST /v1/chat/completions` — Chat completions (OpenAI-compatible)
+- `POST /v1/completions` — Text completions
+- `GET /v1/models` — List available models
+- `GET /v1/user/balance` — Check credit balance
+- `GET /v1/user/usage` — Usage analytics
+- `GET /v1/pricing` — Current pricing
+- `GET /health` — API health status
+
+## Pricing
+
+- Input: $0.50 per 1M tokens
+- Output: $1.50 per 1M tokens
+- Free tier: 1.0 credits on signup
 
 ## Properties
 
-- **Model**: Constantinople
+- **Model**: Qwen/Qwen2.5-7B-Instruct (7B parameters)
 - **Network**: Bittensor Subnet 97
 - **Throughput**: Scales with miners — no single point of failure
-- **Cost**: Free — no API key required
-- **Verification**: Hidden state challenge protocol
+- **Verification**: Hidden state challenge protocol (cosine similarity verification)
 - **Compatibility**: OpenAI chat completions API
 - **Streaming**: Supported
+- **Dataset**: All queries audited and published to Cloudflare R2
 
 ## Machine-Readable
 
@@ -70,14 +90,22 @@ that match the validator's reference within cosine similarity > 0.995.
   "name": "Constantinople",
   "network": "bittensor",
   "subnet": 97,
-  "model": "constantinople",
-  "api_base": "https://constantinople.cloud/v1",
-  "auth": "none",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "api_base": "https://api.constantinople.cloud/v1",
+  "auth": "bearer",
+  "auth_prefix": "cst-",
   "endpoints": {
     "chat": "/v1/chat/completions",
-    "models": "/v1/models"
+    "completions": "/v1/completions",
+    "models": "/v1/models",
+    "balance": "/v1/user/balance",
+    "pricing": "/v1/pricing"
   },
-  "capabilities": ["stream", "chat"],
-  "cost": "free"
+  "capabilities": ["stream", "chat", "completions"],
+  "pricing": {
+    "input_per_1m": 0.50,
+    "output_per_1m": 1.50,
+    "currency": "USD"
+  }
 }
 ```

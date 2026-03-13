@@ -120,12 +120,11 @@ export function APIPage() {
 
         setUser(data.user);
         setKeys(data.api_keys || []);
-        // If user has active keys, use first one for session
-        const activeKeys = (data.api_keys || []).filter((k: APIKey) => k.is_active);
-        if (activeKeys.length > 0 && sessionKey) {
+        if (data.session_key) {
+          saveSessionKey(data.session_key);
           setTab('dashboard');
         } else {
-          setError('Log in with an existing API key, or create a new one.');
+          setError('Logged in. Enter one of your API keys below to access the dashboard.');
         }
       } else {
         const res = await fetch(`${API_BACKEND}/v1/auth/register`, {
@@ -524,13 +523,18 @@ export function APIPage() {
             <p className="text-sm text-g3-text-secondary mb-3">
               Constantinople exposes an OpenAI-compatible API. Use any OpenAI SDK or HTTP client.
             </p>
+            {sessionKey && (
+              <div className="mb-4 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-300">
+                Your API key is pre-filled in the examples below.
+              </div>
+            )}
 
             <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2 mt-4">Python</h4>
             <CodeBlock code={`from openai import OpenAI
 
 client = OpenAI(
     base_url="${API_BACKEND}/v1",
-    api_key="cst-your-key-here"
+    api_key="${sessionKey || 'cst-your-key-here'}"
 )
 
 response = client.chat.completions.create(
@@ -542,7 +546,7 @@ print(response.choices[0].message.content)`} />
 
             <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2 mt-4">cURL</h4>
             <CodeBlock code={`curl ${API_BACKEND}/v1/chat/completions \\
-  -H "Authorization: Bearer cst-your-key-here" \\
+  -H "Authorization: Bearer ${sessionKey || 'cst-your-key-here'}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "Qwen/Qwen2.5-7B-Instruct",
@@ -555,7 +559,7 @@ print(response.choices[0].message.content)`} />
 
 const client = new OpenAI({
   baseURL: '${API_BACKEND}/v1',
-  apiKey: 'cst-your-key-here',
+  apiKey: '${sessionKey || 'cst-your-key-here'}',
 });
 
 const completion = await client.chat.completions.create({
@@ -575,6 +579,8 @@ console.log(completion.choices[0].message.content);`} />
               <EndpointRow method="GET" path="/v1/user/balance" desc="Check credit balance" />
               <EndpointRow method="GET" path="/v1/user/usage" desc="Usage analytics" />
               <EndpointRow method="GET" path="/v1/pricing" desc="Current pricing" />
+              <EndpointRow method="GET" path="/v1/user/transactions" desc="Transaction history" />
+              <EndpointRow method="GET" path="/v1/billing/invoices" desc="Payment invoices" />
               <EndpointRow method="GET" path="/health" desc="API health status" />
             </div>
           </div>
@@ -613,16 +619,23 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 function CodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   return (
     <div className="relative group">
-      <pre className="p-3 bg-black/30 rounded-lg overflow-x-auto text-xs font-mono text-g3-text-secondary leading-relaxed">
+      <pre className="p-3 pr-16 bg-black/30 rounded-lg overflow-x-auto text-xs font-mono text-g3-text-secondary leading-relaxed">
         {code}
       </pre>
       <button
-        onClick={() => navigator.clipboard.writeText(code)}
-        className="absolute top-2 right-2 px-2 py-1 bg-white/10 rounded text-xs text-g3-text-secondary opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20"
+        onClick={handleCopy}
+        className="absolute top-2 right-2 px-2 py-1 bg-white/10 rounded text-xs text-g3-text-secondary hover:bg-white/20 transition-colors"
       >
-        Copy
+        {copied ? 'Copied!' : 'Copy'}
       </button>
     </div>
   );

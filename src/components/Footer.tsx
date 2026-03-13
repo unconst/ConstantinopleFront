@@ -45,7 +45,7 @@ export function Footer() {
             </h4>
             <div className="space-y-3">
               <span className="block font-sans text-sm text-g3-text-secondary">Bittensor Subnet 97</span>
-              <span className="block font-sans text-sm text-g3-text-secondary">Model: Constantinople</span>
+              <span className="block font-sans text-sm text-g3-text-secondary">Model: Qwen2.5-7B-Instruct</span>
               <span className="block font-sans text-sm text-g3-text-muted">Hidden state verification</span>
             </div>
           </div>
