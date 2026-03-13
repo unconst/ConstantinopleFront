@@ -97,11 +97,11 @@ export function DatasetPage() {
   const fetchHistory = useCallback(async (date: string | null, append = false) => {
     try {
       if (append) setLoadingMore(true); else setLoading(true);
-      const params = new URLSearchParams({ limit: '100' });
+      const params = new URLSearchParams({ limit: '30' });
       if (date) params.set('date', date);
       if (append && nextToken) params.set('continuation_token', nextToken);
 
-      const res = await fetch(`${API_BASE}/v1/audit/history?${params}`, { signal: AbortSignal.timeout(15000) });
+      const res = await fetch(`${API_BASE}/v1/audit/history?${params}`, { signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
