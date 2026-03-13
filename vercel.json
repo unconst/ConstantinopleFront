@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/((?!assets|images|.well-known|agents.txt|llm.txt|SKILL.md).*)", "destination": "/index.html" }
+    { "source": "/((?!assets|images|.well-known|agents.txt|llm.txt|SKILL.md|robots.txt).*)", "destination": "/index.html" }
   ]
 }
