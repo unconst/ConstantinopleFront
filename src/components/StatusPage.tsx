@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 const API_BASE = 'https://arbos-inference.vercel.app';
 const POLL_INTERVAL = 8000; // 8 seconds
@@ -67,6 +67,8 @@ function useGatewayHealth() {
   const [health, setHealth] = useState<GatewayHealth | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<number>(0);
+  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+  const [downSince, setDownSince] = useState<number | null>(null);
 
   // History buffers for sparklines (last 30 data points)
   const [tpsHistory, setTpsHistory] = useState<number[]>([]);
@@ -82,6 +84,8 @@ function useGatewayHealth() {
       setHealth(data);
       setError(null);
       setLastUpdate(Date.now());
+      setConsecutiveFailures(0);
+      setDownSince(null);
 
       // Compute aggregate metrics
       const aliveMiners = data.miners_detail.filter(m => m.alive);
@@ -101,6 +105,10 @@ function useGatewayHealth() {
       setReliabilityHistory(prev => [...prev.slice(-29), avgReliability * 100]);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to fetch');
+      setConsecutiveFailures(prev => {
+        if (prev === 0) setDownSince(Date.now());
+        return prev + 1;
+      });
     }
   }, []);
 
@@ -110,7 +118,7 @@ function useGatewayHealth() {
     return () => clearInterval(interval);
   }, [fetchHealth]);
 
-  return { health, error, lastUpdate, tpsHistory, latencyHistory, minerCountHistory, reliabilityHistory };
+  return { health, error, lastUpdate, consecutiveFailures, downSince, tpsHistory, latencyHistory, minerCountHistory, reliabilityHistory };
 }
 
 function formatUptime(seconds: number): string {
@@ -121,9 +129,10 @@ function formatUptime(seconds: number): string {
 }
 
 export function StatusPage() {
-  const { health, error, lastUpdate, tpsHistory, latencyHistory, minerCountHistory, reliabilityHistory } = useGatewayHealth();
+  const { health, error, lastUpdate, consecutiveFailures, downSince, tpsHistory, latencyHistory, minerCountHistory, reliabilityHistory } = useGatewayHealth();
 
-  const isOnline = health?.status === 'ok';
+  const isOnline = health?.status === 'ok' && consecutiveFailures === 0;
+  const isDown = consecutiveFailures >= 3;
   const aliveMiners = health?.miners_detail.filter(m => m.alive) ?? [];
   const avgTps = aliveMiners.length > 0
     ? aliveMiners.reduce((sum, m) => sum + m.avg_tps, 0) / aliveMiners.length
@@ -147,6 +156,25 @@ export function StatusPage() {
       className="relative z-20 min-h-screen pt-28 pb-20 px-8 lg:px-16"
     >
       <div className="max-w-7xl mx-auto">
+        {/* Gateway Down Banner */}
+        {isDown && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 border border-red-500/30 rounded-lg p-4 bg-red-500/10 backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+              <span className="font-sans text-sm text-red-300 font-medium">Gateway unreachable</span>
+            </div>
+            <p className="font-sans text-xs text-red-400/70 mt-1 ml-5">
+              {consecutiveFailures} consecutive failures
+              {downSince && ` · Down for ${formatUptime(Math.floor((Date.now() - downSince) / 1000))}`}
+              {lastUpdate > 0 && ` · Last successful poll: ${new Date(lastUpdate).toLocaleTimeString()}`}
+            </p>
+          </motion.div>
+        )}
+
         {/* Header */}
         <div className="mb-16">
           <div className="flex items-center gap-4 mb-6">
@@ -156,9 +184,9 @@ export function StatusPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : error ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'}`} />
+            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : isDown ? 'bg-red-400 animate-pulse' : error ? 'bg-yellow-400' : 'bg-yellow-400 animate-pulse'}`} />
             <h2 className="font-serif text-4xl sm:text-5xl text-g3-text leading-tight tracking-[-0.02em]">
-              {isOnline ? 'All systems operational' : error ? 'Connection issue' : 'Loading...'}
+              {isOnline ? 'All systems operational' : isDown ? 'Gateway offline' : error ? 'Connection issue' : 'Loading...'}
             </h2>
           </div>
           {lastUpdate > 0 && (
@@ -219,6 +247,81 @@ export function StatusPage() {
           />
         </div>
 
+        {/* Weight Distribution */}
+        {health && Object.keys(health.weights).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="mt-12 border border-white/[0.08] rounded-lg p-6 backdrop-blur-sm bg-white/[0.02]"
+          >
+            <h3 className="font-sans text-sm font-medium text-g3-text tracking-wide mb-4">Weight distribution</h3>
+            <div className="flex h-6 rounded-full overflow-hidden bg-white/[0.04]">
+              {Object.entries(health.weights)
+                .sort(([, a], [, b]) => b - a)
+                .map(([uid, weight], i) => {
+                  const colors = ['rgba(110,200,150,0.7)', 'rgba(150,140,220,0.7)', 'rgba(201,169,98,0.7)', 'rgba(200,120,120,0.7)', 'rgba(120,180,200,0.7)'];
+                  return (
+                    <div
+                      key={uid}
+                      style={{ width: `${weight * 100}%`, backgroundColor: colors[i % colors.length] }}
+                      className="h-full flex items-center justify-center transition-all duration-500"
+                      title={`UID ${uid}: ${(weight * 100).toFixed(1)}%`}
+                    >
+                      {weight > 0.08 && (
+                        <span className="font-mono text-[10px] text-white/90 font-medium">
+                          {uid}: {(weight * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+            <div className="flex gap-4 mt-3 flex-wrap">
+              {Object.entries(health.weights)
+                .sort(([, a], [, b]) => b - a)
+                .map(([uid, weight], i) => {
+                  const colors = ['rgba(110,200,150,0.7)', 'rgba(150,140,220,0.7)', 'rgba(201,169,98,0.7)', 'rgba(200,120,120,0.7)', 'rgba(120,180,200,0.7)'];
+                  return (
+                    <div key={uid} className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} />
+                      <span className="font-mono text-[11px] text-g3-text-muted">UID {uid}: {(weight * 100).toFixed(1)}%</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Epoch Progress Bar */}
+        {health && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.18 }}
+            className="mt-6 border border-white/[0.08] rounded-lg p-6 backdrop-blur-sm bg-white/[0.02]"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-sans text-sm font-medium text-g3-text tracking-wide">Epoch {health.epoch}</h3>
+              <span className="font-mono text-xs text-g3-text-muted">
+                {Math.floor(health.epoch_elapsed_s / 60)}m / {Math.floor(health.epoch_length_s / 60)}m
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden bg-white/[0.06]">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-amber-500/60 to-amber-400/80"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min((health.epoch_elapsed_s / health.epoch_length_s) * 100, 100)}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+            <p className="font-sans text-[11px] text-g3-text-muted mt-2">
+              {((health.epoch_elapsed_s / health.epoch_length_s) * 100).toFixed(0)}% complete
+              {health.last_weight_set > 0 && ` · Weights last set ${formatUptime(Math.floor(Date.now() / 1000 - health.last_weight_set))} ago`}
+            </p>
+          </motion.div>
+        )}
+
         {/* Request Counters */}
         {health && (
           <motion.div
@@ -262,6 +365,7 @@ export function StatusPage() {
                     <th className="px-6 py-3 font-sans text-[11px] text-g3-text-muted font-medium tracking-wider uppercase">Reliability</th>
                     <th className="px-6 py-3 font-sans text-[11px] text-g3-text-muted font-medium tracking-wider uppercase">Served</th>
                     <th className="px-6 py-3 font-sans text-[11px] text-g3-text-muted font-medium tracking-wider uppercase">Score</th>
+                    <th className="px-6 py-3 font-sans text-[11px] text-g3-text-muted font-medium tracking-wider uppercase">Weight</th>
                     <th className="px-6 py-3 font-sans text-[11px] text-g3-text-muted font-medium tracking-wider uppercase">Challenges</th>
                   </tr>
                 </thead>
@@ -280,6 +384,7 @@ export function StatusPage() {
                       <td className="px-6 py-3 font-mono text-sm text-g3-text">{(m.reliability * 100).toFixed(0)}%</td>
                       <td className="px-6 py-3 font-mono text-sm text-g3-text-secondary">{m.served}</td>
                       <td className="px-6 py-3 font-mono text-sm text-g3-text">{m.score?.toFixed(2) ?? '—'}</td>
+                      <td className="px-6 py-3 font-mono text-sm text-g3-text">{m.weight != null ? `${(m.weight * 100).toFixed(1)}%` : '—'}</td>
                       <td className="px-6 py-3 font-mono text-sm text-g3-text-secondary">{m.pass_rate != null ? `${(m.pass_rate * 100).toFixed(0)}%` : '—'}</td>
                     </tr>
                   ))}
