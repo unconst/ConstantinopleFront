@@ -49,12 +49,12 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
           ))}
         </nav>
 
-        <a
-          href="/api-key"
+        <button
+          onClick={() => onNavigate('api')}
           className="hidden lg:block px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text hover:bg-white/10 hover:border-white/40 transition-all duration-250 tracking-wide"
         >
           API Key
-        </a>
+        </button>
 
         <button
           className="lg:hidden text-g3-text"
@@ -121,13 +121,12 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
                     {item.label}
                   </button>
                 ))}
-                <a
-                  href="/api-key"
-                  onClick={() => setMobileOpen(false)}
+                <button
+                  onClick={() => { onNavigate('api'); setMobileOpen(false); }}
                   className="inline-block w-fit px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text"
                 >
                   API Key
-                </a>
+                </button>
               </div>
             </motion.nav>
           </>

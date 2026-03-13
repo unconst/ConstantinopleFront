@@ -5,10 +5,11 @@ import { HeroContent } from './components/HeroContent';
 import { DatasetPage } from './components/DatasetPage';
 import { DocsPage } from './components/DocsPage';
 import { StatusPage } from './components/StatusPage';
+import { APIPage } from './components/APIPage';
 import { Footer } from './components/Footer';
 import { VideoBackground } from './components/VideoBackground';
 
-export type Page = 'home' | 'dataset' | 'docs' | 'status';
+export type Page = 'home' | 'dataset' | 'docs' | 'status' | 'api';
 
 function App() {
   const [page, setPage] = useState<Page>('home');
@@ -63,6 +64,17 @@ function App() {
               transition={{ duration: 0.35 }}
             >
               <StatusPage />
+            </motion.div>
+          )}
+          {page === 'api' && (
+            <motion.div
+              key="api"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              <APIPage />
             </motion.div>
           )}
         </AnimatePresence>
