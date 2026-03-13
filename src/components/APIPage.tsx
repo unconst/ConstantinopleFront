@@ -37,6 +37,7 @@ export function APIPage() {
   const [totalUsage, setTotalUsage] = useState({ requests: 0, cost: 0, inputTokens: 0, outputTokens: 0 });
   const [newKey, setNewKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [invoice, setInvoice] = useState<{ amount: string; currency: string; address: string; id: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [codeLang, setCodeLang] = useState<CodeLang>('python');
 
@@ -493,7 +494,7 @@ console.log(completion.choices[0].message.content);`,
                   key={amt}
                   className="px-3 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-xs text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
                   onClick={async () => {
-                    setError(null);
+                    setError(null); setInvoice(null);
                     try {
                       const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
                         method: 'POST',
@@ -502,7 +503,7 @@ console.log(completion.choices[0].message.content);`,
                       });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.detail || 'Failed');
-                      setError(`Send exactly $${data.amount_usd} USDC on Base to ${data.deposit_address}. Auto-confirmed in ~6 seconds.`);
+                      setInvoice({ amount: `$${data.amount_usd}`, currency: 'USDC', address: data.deposit_address, id: data.invoice_id });
                     } catch (err: unknown) {
                       setError(err instanceof Error ? err.message : 'Payment failed');
                     }
@@ -520,7 +521,7 @@ console.log(completion.choices[0].message.content);`,
                   key={`eth-${amt}`}
                   className="px-3 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-xs text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
                   onClick={async () => {
-                    setError(null);
+                    setError(null); setInvoice(null);
                     try {
                       const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
                         method: 'POST',
@@ -529,7 +530,7 @@ console.log(completion.choices[0].message.content);`,
                       });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.detail || 'Failed');
-                      setError(`Send $${data.amount_usd} worth of ETH on Base to ${data.deposit_address}. Auto-confirmed in ~6 seconds.`);
+                      setInvoice({ amount: `$${data.amount_usd}`, currency: 'ETH', address: data.deposit_address, id: data.invoice_id });
                     } catch (err: unknown) {
                       setError(err instanceof Error ? err.message : 'Payment failed');
                     }
@@ -539,6 +540,26 @@ console.log(completion.choices[0].message.content);`,
                 </button>
               ))}
             </div>
+
+            {invoice && (
+              <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="flex items-start justify-between">
+                  <p className="text-sm text-blue-300 font-semibold mb-2">Payment Invoice</p>
+                  <button onClick={() => setInvoice(null)} className="text-blue-400 hover:text-blue-300 text-xs">dismiss</button>
+                </div>
+                <p className="text-xs text-g3-text-secondary mb-2">
+                  Send exactly <span className="text-g3-text font-mono font-semibold">{invoice.amount}</span> {invoice.currency} on <span className="text-g3-text">Base</span> to:
+                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <code className="flex-1 px-3 py-2 bg-black/30 rounded font-mono text-xs text-g3-text break-all select-all">{invoice.address}</code>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText(invoice.address).catch(() => { const ta = document.createElement('textarea'); ta.value = invoice.address; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }); }}
+                    className="px-2 py-2 text-xs bg-white/[0.06] border border-white/[0.12] rounded hover:bg-white/10 text-g3-text-secondary"
+                  >Copy</button>
+                </div>
+                <p className="text-xs text-g3-text-secondary">Auto-confirmed after ~3 block confirmations (~6 seconds). Invoice ID: <span className="font-mono">{invoice.id}</span></p>
+              </div>
+            )}
           </div>
         </div>
 
