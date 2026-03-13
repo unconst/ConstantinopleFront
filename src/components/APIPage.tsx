@@ -433,15 +433,64 @@ export function APIPage() {
           <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
             <h3 className="text-sm font-semibold text-g3-text mb-2">Add Credits</h3>
             <p className="text-sm text-g3-text-secondary mb-3">
-              1 credit = $1 USD. Pay with card or crypto.
+              1 credit = $1 USD. Pay with USDC on Base (low fees) or card.
             </p>
-            <div className="flex gap-2 flex-wrap">
+
+            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Crypto (USDC on Base)</h4>
+            <div className="flex gap-2 flex-wrap mb-3">
               {[5, 10, 25, 100].map(amt => (
                 <button
                   key={amt}
                   className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
-                  onClick={() => {
-                    setError('Stripe integration coming soon. Contact us for credits.');
+                  onClick={async () => {
+                    setError(null);
+                    try {
+                      const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${sessionKey}`,
+                        },
+                        body: JSON.stringify({ amount: amt, payment_method: 'crypto' }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.detail || 'Failed');
+                      setError(`Invoice created: Send $${amt} USDC on Base to ${data.deposit_address || 'see invoice'}. Invoice ID: ${data.invoice_id}. Credits will be added after confirmation.`);
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : 'Payment failed');
+                    }
+                  }}
+                >
+                  ${amt} USDC
+                </button>
+              ))}
+            </div>
+
+            <h4 className="text-xs font-semibold text-g3-text-secondary uppercase tracking-wider mb-2">Card (Stripe)</h4>
+            <div className="flex gap-2 flex-wrap">
+              {[10, 25, 50, 100].map(amt => (
+                <button
+                  key={`card-${amt}`}
+                  className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-sm text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
+                  onClick={async () => {
+                    setError(null);
+                    try {
+                      const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${sessionKey}`,
+                        },
+                        body: JSON.stringify({ amount: amt, payment_method: 'stripe' }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.detail || 'Failed');
+                      if (data.checkout_url) {
+                        window.open(data.checkout_url, '_blank');
+                      }
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : 'Payment failed');
+                    }
                   }}
                 >
                   ${amt}
@@ -449,7 +498,7 @@ export function APIPage() {
               ))}
             </div>
             <p className="mt-3 text-xs text-g3-text-secondary">
-              Crypto payments (USDC, ETH) coming soon.
+              Base USDC has minimal fees (~$0.01). Ethereum USDC also accepted (higher gas).
             </p>
           </div>
         </div>
