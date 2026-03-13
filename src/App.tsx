@@ -6,6 +6,7 @@ import { DatasetPage } from './components/DatasetPage';
 import { DocsPage } from './components/DocsPage';
 import { StatusPage } from './components/StatusPage';
 import { Footer } from './components/Footer';
+import { VideoBackground } from './components/VideoBackground';
 
 export type Page = 'home' | 'dataset' | 'docs' | 'status';
 
@@ -14,14 +15,7 @@ function App() {
 
   return (
     <main className="min-h-screen bg-g3-bg relative">
-      <div className="fixed inset-0 z-0">
-        <img
-          src="/images/hero-bg.jpg"
-          alt=""
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
-      </div>
+      <VideoBackground />
 
       <Navbar activePage={page} onNavigate={setPage} />
 
