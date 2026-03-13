@@ -620,20 +620,30 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code).then(() => {
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      // Fallback: create a temporary textarea for copying
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+    }
+    setTimeout(() => setCopied(false), 2000);
   };
   return (
     <div className="relative group">
-      <pre className="p-3 pr-16 bg-black/30 rounded-lg overflow-x-auto text-xs font-mono text-g3-text-secondary leading-relaxed">
-        {code}
-      </pre>
+      <pre className="p-3 pr-16 bg-black/30 rounded-lg overflow-x-auto text-xs font-mono text-g3-text-secondary leading-relaxed select-text">{code}</pre>
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 px-2 py-1 bg-white/10 rounded text-xs text-g3-text-secondary hover:bg-white/20 transition-colors"
+        className="absolute top-2 right-2 px-2 py-1 bg-white/10 rounded text-xs text-g3-text-secondary hover:bg-white/20 hover:text-g3-text transition-colors"
       >
         {copied ? 'Copied!' : 'Copy'}
       </button>
