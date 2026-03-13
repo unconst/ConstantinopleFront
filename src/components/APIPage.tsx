@@ -171,7 +171,12 @@ export function APIPage() {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${sessionKey}` },
       });
-      if (res.ok) fetchDashboard();
+      if (res.ok) {
+        fetchDashboard();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.detail || 'Failed to revoke key');
+      }
     } catch {}
   };
 
