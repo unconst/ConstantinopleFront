@@ -484,9 +484,9 @@ console.log(completion.choices[0].message.content);`,
           {/* Add Credits */}
           <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
             <h3 className="text-sm font-semibold text-g3-text mb-3">Add Credits</h3>
-            <p className="text-xs text-g3-text-secondary mb-3">1 credit = $1 USD</p>
+            <p className="text-xs text-g3-text-secondary mb-3">1 credit = $1 USD &middot; Pay with USDC or ETH on Base</p>
 
-            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">Crypto (USDC on Base)</p>
+            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">USDC on Base</p>
             <div className="flex gap-2 flex-wrap mb-4">
               {[5, 10, 25, 100].map(amt => (
                 <button
@@ -498,11 +498,11 @@ console.log(completion.choices[0].message.content);`,
                       const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionKey}` },
-                        body: JSON.stringify({ amount: amt, payment_method: 'crypto' }),
+                        body: JSON.stringify({ amount: amt, payment_method: 'crypto', currency: 'USDC' }),
                       });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.detail || 'Failed');
-                      setError(`Invoice created: Send $${amt} USDC on Base to ${data.deposit_address || 'see invoice'}. Invoice ID: ${data.invoice_id}`);
+                      setError(`Send exactly $${data.amount_usd} USDC on Base to ${data.deposit_address}. Auto-confirmed in ~6 seconds.`);
                     } catch (err: unknown) {
                       setError(err instanceof Error ? err.message : 'Payment failed');
                     }
@@ -513,11 +513,11 @@ console.log(completion.choices[0].message.content);`,
               ))}
             </div>
 
-            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">Card (Stripe)</p>
+            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">ETH on Base</p>
             <div className="flex gap-2 flex-wrap">
-              {[10, 25, 50, 100].map(amt => (
+              {[5, 10, 25, 100].map(amt => (
                 <button
-                  key={`card-${amt}`}
+                  key={`eth-${amt}`}
                   className="px-3 py-1.5 bg-white/[0.06] border border-white/[0.12] rounded-lg text-xs text-g3-text hover:bg-white/10 hover:border-white/20 transition-all"
                   onClick={async () => {
                     setError(null);
@@ -525,11 +525,11 @@ console.log(completion.choices[0].message.content);`,
                       const res = await fetch(`${API_BACKEND}/v1/billing/topup`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionKey}` },
-                        body: JSON.stringify({ amount: amt, payment_method: 'stripe' }),
+                        body: JSON.stringify({ amount: amt, payment_method: 'crypto', currency: 'ETH' }),
                       });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.detail || 'Failed');
-                      if (data.checkout_url) window.open(data.checkout_url, '_blank');
+                      setError(`Send $${data.amount_usd} worth of ETH on Base to ${data.deposit_address}. Auto-confirmed in ~6 seconds.`);
                     } catch (err: unknown) {
                       setError(err instanceof Error ? err.message : 'Payment failed');
                     }
