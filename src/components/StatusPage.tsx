@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://deliver-qualification-annex-medications.trycloudflare.com';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://arbos-inference.vercel.app';
 const POLL_INTERVAL = 8000; // 8 seconds
 
 interface MinerDetail {

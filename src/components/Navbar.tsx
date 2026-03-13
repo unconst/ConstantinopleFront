@@ -90,35 +90,47 @@ export function Navbar({ activePage, onNavigate }: NavbarProps) {
       {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.nav
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="lg:hidden overflow-hidden bg-black/80 backdrop-blur-md border-b border-white/[0.08]"
-          >
-            <div className="px-8 py-4 flex flex-col gap-4">
-              {navItems.map((item) => (
-                <button
-                  key={item.page}
-                  onClick={() => { onNavigate(item.page); setMobileOpen(false); }}
-                  className={`text-left font-sans text-sm tracking-wide ${
-                    activePage === item.page
-                      ? 'text-g3-text'
-                      : 'text-g3-text-secondary'
-                  }`}
+          <>
+            {/* Backdrop to catch taps outside */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed inset-0 top-20 bg-black/60 z-40"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.nav
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden absolute top-20 left-0 right-0 z-50 bg-g3-bg/95 backdrop-blur-md border-b border-white/[0.08]"
+            >
+              <div className="px-8 py-6 flex flex-col gap-5">
+                {navItems.map((item) => (
+                  <button
+                    key={item.page}
+                    onClick={() => { onNavigate(item.page); setMobileOpen(false); }}
+                    className={`text-left font-sans text-base tracking-wide py-1 ${
+                      activePage === item.page
+                        ? 'text-g3-text'
+                        : 'text-g3-text-secondary'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                <a
+                  href="/api-key"
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-block w-fit px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text"
                 >
-                  {item.label}
-                </button>
-              ))}
-              <a
-                href="/api-key"
-                className="inline-block w-fit px-5 py-2.5 border border-white/20 rounded-full font-sans text-sm text-g3-text"
-              >
-                API Key
-              </a>
-            </div>
-          </motion.nav>
+                  API Key
+                </a>
+              </div>
+            </motion.nav>
+          </>
         )}
       </AnimatePresence>
     </motion.header>

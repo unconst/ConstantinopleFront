@@ -1,52 +1,118 @@
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useCallback } from 'react';
 
-function useCounter(target: number, duration: number = 1500) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    const start = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / duration, 1);
-      setValue(Math.floor(target * progress));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [target, duration]);
-  return value;
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://arbos-inference.vercel.app';
+const POLL_INTERVAL = 15000; // 15 seconds
+
+interface AuditChallenge {
+  layer: number;
+  token_pos: number;
+  cosine_sim: number | null;
+  latency_ms: number | null;
+  passed: boolean;
 }
 
-const metrics = [
-  { label: 'Total Queries', value: 1_284_391, format: (n: number) => n.toLocaleString() },
-  { label: 'Unique Sessions', value: 47_832, format: (n: number) => n.toLocaleString() },
-  { label: 'Tokens Generated', value: 892, format: (n: number) => `${n}M` },
-  { label: 'Avg Latency', value: 142, format: (n: number) => `${n}ms` },
-  { label: 'Active Miners', value: 38, format: (n: number) => `${n}` },
-  { label: 'Dataset Size', value: 12, format: (n: number) => `${n} GB` },
-];
+interface AuditRecord {
+  timestamp: string;
+  request_id: string;
+  type: 'organic' | 'synthetic';
+  miner_uid: number;
+  miner_hotkey: string;
+  prompt: string;
+  response: string;
+  messages?: { role: string; content: string }[];
+  ttft_ms: number;
+  tokens_per_sec: number;
+  input_tokens: number;
+  output_tokens: number;
+  speed_score: number;
+  verification_score: number;
+  quality_score: number;
+  points_awarded: number;
+  challenge?: AuditChallenge;
+}
 
-const recentQueries = [
-  { time: '2s ago', tokens: 847, category: 'Code generation' },
-  { time: '5s ago', tokens: 312, category: 'Reasoning' },
-  { time: '8s ago', tokens: 1204, category: 'Analysis' },
-  { time: '12s ago', tokens: 89, category: 'Classification' },
-  { time: '15s ago', tokens: 2031, category: 'Creative writing' },
-  { time: '19s ago', tokens: 456, category: 'Code generation' },
-  { time: '23s ago', tokens: 178, category: 'Translation' },
-  { time: '28s ago', tokens: 923, category: 'Reasoning' },
-];
+interface AuditResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  records: AuditRecord[];
+}
+
+function useAuditFeed() {
+  const [data, setData] = useState<AuditResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAudit = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/audit/recent?limit=100`, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json: AuditResponse = await res.json();
+      setData(json);
+      setError(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to fetch');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAudit();
+    const interval = setInterval(fetchAudit, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchAudit]);
+
+  return { data, error, loading };
+}
+
+function timeAgo(iso: string): string {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max) + '...' : s;
+}
 
 export function DatasetPage() {
+  const { data, error, loading } = useAuditFeed();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'organic' | 'synthetic' | 'challenged'>('all');
+
+  const records = data?.records ?? [];
+  const filtered = records.filter(r => {
+    if (filter === 'organic') return r.type === 'organic';
+    if (filter === 'synthetic') return r.type === 'synthetic';
+    if (filter === 'challenged') return !!r.challenge;
+    return true;
+  });
+
+  // Compute live stats from the records we have
+  const totalTokens = records.reduce((s, r) => s + r.input_tokens + r.output_tokens, 0);
+  const organicCount = records.filter(r => r.type === 'organic').length;
+  const syntheticCount = records.filter(r => r.type === 'synthetic').length;
+  const challengedCount = records.filter(r => !!r.challenge).length;
+  const passedCount = records.filter(r => r.challenge?.passed).length;
+  const avgTps = records.length > 0
+    ? records.reduce((s, r) => s + r.tokens_per_sec, 0) / records.length
+    : 0;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative z-20 min-h-screen pt-28 pb-20 px-8 lg:px-16"
+      className="relative z-20 min-h-screen pt-28 pb-20 px-4 sm:px-8 lg:px-16"
     >
       <div className="max-w-7xl mx-auto">
-        <div className="mb-16">
+        {/* Header */}
+        <div className="mb-12">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-5 h-px bg-g3-text-secondary" />
             <span className="font-sans text-xs text-g3-text-secondary tracking-widest uppercase">
@@ -54,70 +120,229 @@ export function DatasetPage() {
             </span>
           </div>
           <h2 className="font-serif text-4xl sm:text-5xl text-g3-text leading-tight tracking-[-0.02em]">
-            Every query, shared.
+            Every query, verified.
           </h2>
           <p className="font-sans text-base text-g3-text-secondary mt-4 max-w-lg leading-relaxed">
-            All inference is sanitized and published. This is the public record of intelligence flowing through Constantinople.
+            All inference requests and hidden-state audits are logged. This is the public record of intelligence flowing through Constantinople.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
-          {metrics.map((m) => (
-            <MetricCard key={m.label} label={m.label} target={m.value} format={m.format} />
+        {/* Live Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+          <StatCard label="Total Records" value={data?.total ?? 0} />
+          <StatCard label="Organic" value={organicCount} />
+          <StatCard label="Synthetic" value={syntheticCount} />
+          <StatCard label="Challenged" value={challengedCount} />
+          <StatCard label="Passed" value={passedCount} color={passedCount > 0 ? 'text-emerald-400' : undefined} />
+          <StatCard label="Avg TPS" value={Math.round(avgTps)} />
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
+          {(['all', 'organic', 'synthetic', 'challenged'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-full font-sans text-xs tracking-wide transition-colors ${
+                filter === f
+                  ? 'bg-white/10 text-g3-text border border-white/20'
+                  : 'text-g3-text-muted hover:text-g3-text-secondary border border-transparent'
+              }`}
+            >
+              {f === 'all' ? `All (${records.length})` :
+               f === 'organic' ? `Organic (${organicCount})` :
+               f === 'synthetic' ? `Synthetic (${syntheticCount})` :
+               `Challenged (${challengedCount})`}
+            </button>
           ))}
-        </div>
-
-        <div>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-5 h-px bg-g3-text-secondary" />
-            <span className="font-sans text-xs text-g3-text-muted tracking-widest uppercase">
-              Recent queries
+          {totalTokens > 0 && (
+            <span className="ml-auto font-mono text-xs text-g3-text-muted">
+              {totalTokens.toLocaleString()} tokens in view
             </span>
-          </div>
-
-          <div className="border border-white/[0.08] rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/[0.08]">
-                  <th className="text-left py-3 px-5 font-sans text-xs text-g3-text-muted tracking-widest uppercase">Time</th>
-                  <th className="text-left py-3 px-5 font-sans text-xs text-g3-text-muted tracking-widest uppercase">Category</th>
-                  <th className="text-right py-3 px-5 font-sans text-xs text-g3-text-muted tracking-widest uppercase">Tokens</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentQueries.map((q, i) => (
-                  <motion.tr
-                    key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className="border-b border-white/[0.04] last:border-b-0"
-                  >
-                    <td className="py-3.5 px-5 font-mono text-sm text-g3-text-muted">{q.time}</td>
-                    <td className="py-3.5 px-5 font-sans text-sm text-g3-text-secondary">{q.category}</td>
-                    <td className="py-3.5 px-5 font-mono text-sm text-g3-text-secondary text-right">{q.tokens.toLocaleString()}</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          )}
         </div>
+
+        {/* Loading / Error States */}
+        {loading && (
+          <div className="text-center py-20">
+            <div className="inline-block w-6 h-6 border-2 border-g3-text-muted border-t-transparent rounded-full animate-spin" />
+            <p className="font-sans text-sm text-g3-text-muted mt-4">Loading audit records...</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="border border-red-500/20 rounded-lg p-6 bg-red-500/5">
+            <p className="font-sans text-sm text-red-400">Failed to load audit data: {error}</p>
+            <p className="font-sans text-xs text-red-400/60 mt-1">Retrying every {POLL_INTERVAL / 1000}s</p>
+          </div>
+        )}
+
+        {/* Records List */}
+        {!loading && filtered.length === 0 && !error && (
+          <div className="text-center py-20">
+            <p className="font-sans text-sm text-g3-text-muted">No records yet. The gateway will populate this as requests flow through.</p>
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div className="space-y-2">
+            {filtered.map((r) => (
+              <motion.div
+                key={r.request_id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border border-white/[0.08] rounded-lg overflow-hidden backdrop-blur-sm bg-white/[0.02]"
+              >
+                {/* Row Summary */}
+                <button
+                  onClick={() => setExpanded(expanded === r.request_id ? null : r.request_id)}
+                  className="w-full text-left px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-white/[0.03] transition-colors"
+                >
+                  {/* Type Badge */}
+                  <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono tracking-wider uppercase ${
+                    r.type === 'organic'
+                      ? 'bg-blue-500/15 text-blue-400'
+                      : 'bg-purple-500/15 text-purple-400'
+                  }`}>
+                    {r.type}
+                  </span>
+
+                  {/* Challenge indicator */}
+                  {r.challenge && (
+                    <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${r.challenge.passed ? 'bg-emerald-400' : 'bg-red-400'}`}
+                      title={r.challenge.passed ? 'Challenge passed' : 'Challenge failed'} />
+                  )}
+
+                  {/* Prompt preview */}
+                  <span className="flex-1 font-sans text-sm text-g3-text-secondary truncate min-w-0">
+                    {truncate(r.prompt || (r.messages?.[r.messages.length - 1]?.content ?? ''), 80)}
+                  </span>
+
+                  {/* Miner UID */}
+                  <span className="shrink-0 font-mono text-xs text-g3-text-muted">
+                    UID {r.miner_uid}
+                  </span>
+
+                  {/* Time */}
+                  <span className="shrink-0 font-mono text-xs text-g3-text-muted w-16 text-right">
+                    {timeAgo(r.timestamp)}
+                  </span>
+
+                  {/* Expand chevron */}
+                  <svg className={`shrink-0 w-4 h-4 text-g3-text-muted transition-transform ${expanded === r.request_id ? 'rotate-180' : ''}`}
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {/* Expanded Detail */}
+                <AnimatePresence>
+                  {expanded === r.request_id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 sm:px-5 pb-5 border-t border-white/[0.06] pt-4 space-y-4">
+                        {/* Prompt */}
+                        <div>
+                          <label className="font-sans text-[11px] text-g3-text-muted tracking-wider uppercase mb-1.5 block">Prompt</label>
+                          <div className="font-mono text-sm text-g3-text-secondary bg-black/20 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
+                            {r.messages
+                              ? r.messages.map((m, i) => (
+                                  <div key={i} className={`${i > 0 ? 'mt-2 pt-2 border-t border-white/[0.06]' : ''}`}>
+                                    <span className="text-g3-text-muted text-[11px] uppercase">{m.role}:</span>
+                                    <span className="ml-2">{m.content}</span>
+                                  </div>
+                                ))
+                              : r.prompt}
+                          </div>
+                        </div>
+
+                        {/* Response */}
+                        <div>
+                          <label className="font-sans text-[11px] text-g3-text-muted tracking-wider uppercase mb-1.5 block">Response</label>
+                          <div className="font-mono text-sm text-g3-text-secondary bg-black/20 rounded p-3 max-h-60 overflow-y-auto whitespace-pre-wrap break-words">
+                            {r.response}
+                          </div>
+                        </div>
+
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <MiniMetric label="TTFT" value={`${r.ttft_ms.toFixed(0)}ms`} />
+                          <MiniMetric label="Speed" value={`${r.tokens_per_sec.toFixed(0)} tok/s`} />
+                          <MiniMetric label="Input" value={`${r.input_tokens} tok`} />
+                          <MiniMetric label="Output" value={`${r.output_tokens} tok`} />
+                          <MiniMetric label="Speed Score" value={r.speed_score.toFixed(3)} />
+                          <MiniMetric label="Verify Score" value={r.verification_score.toFixed(3)} />
+                          <MiniMetric label="Quality" value={r.quality_score.toFixed(3)} />
+                          <MiniMetric label="Points" value={r.points_awarded.toFixed(2)} />
+                        </div>
+
+                        {/* Challenge Detail */}
+                        {r.challenge && (
+                          <div className="border border-white/[0.06] rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`w-1.5 h-1.5 rounded-full ${r.challenge.passed ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                              <span className="font-sans text-xs text-g3-text">
+                                Hidden State Challenge — {r.challenge.passed ? 'Passed' : 'Failed'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <MiniMetric label="Layer" value={`${r.challenge.layer}`} />
+                              <MiniMetric label="Token Pos" value={`${r.challenge.token_pos}`} />
+                              <MiniMetric label="Cosine Sim" value={r.challenge.cosine_sim?.toFixed(6) ?? '—'} />
+                              <MiniMetric label="Latency" value={r.challenge.latency_ms ? `${r.challenge.latency_ms.toFixed(0)}ms` : '—'} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Request ID */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="font-mono text-[10px] text-g3-text-muted">
+                            {r.request_id}
+                          </span>
+                          <span className="font-mono text-[10px] text-g3-text-muted">
+                            · {new Date(r.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );
 }
 
-function MetricCard({ label, target, format }: { label: string; target: number; format: (n: number) => string }) {
-  const value = useCounter(target);
+function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="border border-white/[0.08] rounded-lg p-5"
+      transition={{ duration: 0.3 }}
+      className="border border-white/[0.08] rounded-lg p-4"
     >
-      <div className="font-mono text-2xl font-semibold text-g3-text mb-1">{format(value)}</div>
+      <div className={`font-mono text-xl font-semibold mb-0.5 ${color ?? 'text-g3-text'}`}>
+        {value.toLocaleString()}
+      </div>
       <div className="font-sans text-[11px] text-g3-text-muted tracking-wider uppercase">{label}</div>
     </motion.div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="font-mono text-sm text-g3-text">{value}</div>
+      <div className="font-sans text-[10px] text-g3-text-muted tracking-wider uppercase">{label}</div>
+    </div>
   );
 }
