@@ -61,6 +61,7 @@ that match the validator's reference within cosine similarity > 0.995.
 
 - `POST /v1/chat/completions` — Chat completions (OpenAI-compatible)
 - `POST /v1/completions` — Text completions
+- `POST /v1/embeddings` — Text embeddings
 - `GET /v1/models` — List available models
 - `GET /v1/user/balance` — Check credit balance
 - `GET /v1/user/usage` — Usage analytics
@@ -101,7 +102,7 @@ that match the validator's reference within cosine similarity > 0.995.
     "balance": "/v1/user/balance",
     "pricing": "/v1/pricing"
   },
-  "capabilities": ["stream", "chat", "completions"],
+  "capabilities": ["stream", "chat", "completions", "embeddings"],
   "pricing": {
     "input_per_1m": 0.50,
     "output_per_1m": 1.50,
