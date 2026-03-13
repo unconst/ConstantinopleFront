@@ -186,9 +186,14 @@ export function StatusPage() {
           <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : isDown ? 'bg-red-400 animate-pulse' : error ? 'bg-yellow-400' : 'bg-yellow-400 animate-pulse'}`} />
             <h2 className="font-serif text-4xl sm:text-5xl text-g3-text leading-tight tracking-[-0.02em]">
-              {isOnline ? 'All systems operational' : isDown ? 'Gateway offline' : error ? 'Connection issue' : 'Loading...'}
+              {isOnline ? 'All systems operational' : isDown ? 'Gateway unreachable' : error ? 'Connecting...' : 'Loading...'}
             </h2>
           </div>
+          {!isOnline && error && !isDown && (
+            <p className="font-sans text-sm text-g3-text-muted mt-2">
+              Attempting to reach the gateway. This usually resolves in a few seconds.
+            </p>
+          )}
           {lastUpdate > 0 && (
             <p className="font-sans text-xs text-g3-text-muted mt-3">
               Last updated: {new Date(lastUpdate).toLocaleTimeString()} · Polling every {POLL_INTERVAL / 1000}s

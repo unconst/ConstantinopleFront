@@ -42,6 +42,7 @@ function timeAgo(iso: string): string {
 }
 
 function truncate(s: string, max: number): string {
+  if (/^(tok_\d+\s*)+$/.test(s.trim())) return '[token IDs — pre-text logging]';
   return s.length > max ? s.slice(0, max) + '...' : s;
 }
 
@@ -389,7 +390,9 @@ function RecordRow({ record: r, expanded, onToggle }: { record: AuditRecord; exp
               <div>
                 <label className="font-sans text-[11px] text-g3-text-muted tracking-wider uppercase mb-1.5 block">Response</label>
                 <div className="font-mono text-sm text-g3-text-secondary bg-black/20 rounded p-3 max-h-60 overflow-y-auto whitespace-pre-wrap break-words">
-                  {r.response}
+                  {/^(tok_\d+\s*)+$/.test(r.response.trim())
+                    ? <span className="text-g3-text-muted italic">Token IDs only (pre-text logging)</span>
+                    : r.response}
                 </div>
               </div>
 
