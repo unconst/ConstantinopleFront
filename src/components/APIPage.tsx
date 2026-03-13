@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 
-const API_BACKEND = import.meta.env.VITE_API_BACKEND || 'https://protective-mainstream-pretty-frames.trycloudflare.com';
+const API_BACKEND = import.meta.env.VITE_API_BACKEND || 'https://api.constantinople.cloud';
 
 interface UserInfo {
   id: number;
