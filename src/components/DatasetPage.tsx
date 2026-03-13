@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://arbos-inference.vercel.app';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://deliver-qualification-annex-medications.trycloudflare.com';
 const POLL_INTERVAL = 15000; // 15 seconds
 
 interface AuditChallenge {
