@@ -170,7 +170,7 @@ export function DatasetPage() {
             </span>
           </div>
           <h2 className="font-serif text-4xl sm:text-5xl text-g3-text leading-tight tracking-[-0.02em]">
-            Every query, verified.
+            Every query, shared.
           </h2>
           <p className="font-sans text-base text-g3-text-secondary mt-4 max-w-lg leading-relaxed">
             All inference requests and hidden-state audits are logged to Cloudflare R2. This is the public record of intelligence flowing through Constantinople.
