@@ -38,6 +38,8 @@ export function APIPage() {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<{ amount: string; currency: string; address: string; id: string } | null>(null);
+  const [taoDeposit, setTaoDeposit] = useState<{ address: string; price: number; rate: string } | null>(null);
+  const [taoLoading, setTaoLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [codeLang, setCodeLang] = useState<CodeLang>('python');
 
@@ -490,7 +492,55 @@ console.log(completion.choices[0].message.content);`,
           {/* Add Credits */}
           <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-lg">
             <h3 className="text-sm font-semibold text-g3-text mb-3">Add Credits</h3>
-            <p className="text-xs text-g3-text-secondary mb-3">1 credit = $1 USD &middot; Pay with USDC or ETH on Base</p>
+            <p className="text-xs text-g3-text-secondary mb-3">1 credit = $1 USD &middot; Pay with TAO, USDC, or ETH</p>
+
+            {/* TAO Payment */}
+            <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">TAO on Bittensor</p>
+            <div className="mb-4">
+              {!taoDeposit ? (
+                <button
+                  disabled={taoLoading}
+                  className="px-4 py-2 bg-white/[0.06] border border-white/[0.12] rounded-lg text-xs text-g3-text hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-50"
+                  onClick={async () => {
+                    setTaoLoading(true); setError(null);
+                    try {
+                      const res = await fetch(`${API_BACKEND}/v1/billing/tao-deposit`, {
+                        headers: { 'Authorization': `Bearer ${sessionKey}` },
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.detail || 'Failed');
+                      setTaoDeposit({ address: data.deposit_address, price: data.tao_usd_price, rate: data.rate });
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : 'Failed to get TAO deposit address');
+                    } finally {
+                      setTaoLoading(false);
+                    }
+                  }}
+                >
+                  {taoLoading ? 'Loading...' : 'Get TAO Deposit Address'}
+                </button>
+              ) : (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-sm text-amber-300 font-semibold">Your TAO Deposit Address</p>
+                    <button onClick={() => setTaoDeposit(null)} className="text-amber-400 hover:text-amber-300 text-xs">dismiss</button>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <code className="flex-1 px-3 py-2 bg-black/30 rounded font-mono text-xs text-g3-text break-all select-all">{taoDeposit.address}</code>
+                    <button
+                      onClick={() => { navigator.clipboard?.writeText(taoDeposit.address).catch(() => {}); }}
+                      className="px-2 py-2 text-xs bg-white/[0.06] border border-white/[0.12] rounded hover:bg-white/10 text-g3-text-secondary"
+                    >Copy</button>
+                  </div>
+                  <p className="text-xs text-g3-text-secondary">
+                    Current rate: <span className="text-g3-text font-mono">{taoDeposit.rate}</span>
+                  </p>
+                  <p className="text-xs text-g3-text-secondary mt-1">
+                    Send any amount of TAO. Credits added automatically within 60 seconds at the rate when your deposit is detected.
+                  </p>
+                </div>
+              )}
+            </div>
 
             <p className="text-xs text-g3-text-secondary uppercase tracking-wider mb-2">USDC on Base</p>
             <div className="flex gap-2 flex-wrap mb-4">
