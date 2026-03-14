@@ -390,7 +390,10 @@ export function StatusPage() {
                       <td className="px-6 py-3 font-mono text-sm text-g3-text-secondary">{m.served}</td>
                       <td className="px-6 py-3 font-mono text-sm text-g3-text">{m.score?.toFixed(2) ?? '—'}</td>
                       <td className="px-6 py-3 font-mono text-sm text-g3-text">{m.weight != null ? `${(m.weight * 100).toFixed(1)}%` : '—'}</td>
-                      <td className="px-6 py-3 font-mono text-sm text-g3-text-secondary">{m.pass_rate != null ? `${(m.pass_rate * 100).toFixed(0)}%` : '—'}</td>
+                      <td className="px-6 py-3 font-mono text-sm text-g3-text-secondary">
+                        {m.pass_rate != null ? `${(m.pass_rate * 100).toFixed(0)}%` : '—'}
+                        {m.is_suspect && <span className="ml-1.5 text-[10px] text-amber-400" title="Under review">!</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
