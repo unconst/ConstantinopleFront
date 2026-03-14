@@ -1,5 +1,15 @@
-Constantinople — Decentralized LLM Inference (Bittensor SN97)
-=============================================================
+Constantinople — Decentralized LLM Inference
+=============================================
+
+The true opposite of a closed AI company is one where every query is made
+available to the public. Sure, there will always be demand for private
+intelligence, but as social networks taught us, there is also demand to be
+seen, and value to that which is shared. We are building that network: a
+network of intelligence where inference is cheaper, faster, and more
+accessible than ever before. One where that intelligence is collectively
+owned and shared. To do it, we build a network where any computer in the
+world can compete to run your inference, where the best are rewarded with
+more resources, and where the entire process is transparent and verifiable.
 
 1. GET A KEY
    curl -X POST https://api.constantinople.cloud/v1/quickstart \
@@ -21,24 +31,50 @@ Constantinople — Decentralized LLM Inference (Bittensor SN97)
      print(client.chat.completions.create(model="Qwen/Qwen2.5-7B-Instruct", messages=[{"role":"user","content":"Hello!"}]).choices[0].message.content)
 
 3. ADD FUNDS
-   curl https://api.constantinople.cloud/v1/user/balance \
-     -H "Authorization: Bearer cst-YOUR-KEY"
-
-   To add credits, deposit TAO to your account deposit address:
-     curl https://api.constantinople.cloud/v1/user/deposit-address \
+   Check your balance:
+     curl https://api.constantinople.cloud/v1/user/balance \
        -H "Authorization: Bearer cst-YOUR-KEY"
 
-   TAO is auto-converted to credits at market rate.
+   --- Pay with TAO ---
+   Get your personal TAO deposit address:
+     curl https://api.constantinople.cloud/v1/user/deposit-address \
+       -H "Authorization: Bearer cst-YOUR-KEY"
+   Send TAO on Bittensor (finney) to that address.
+   Auto-converted to credits at market rate. Min deposit: 0.01 TAO.
+
+   --- Pay with ETH or USDC (Base network) ---
+   View deposit address and accepted currencies:
+     curl https://api.constantinople.cloud/v1/billing/crypto-info
+   Top up with ETH:
+     curl -X POST https://api.constantinople.cloud/v1/billing/topup \
+       -H "Authorization: Bearer cst-YOUR-KEY" \
+       -H "Content-Type: application/json" \
+       -d '{"amount":10,"payment_method":"crypto","currency":"ETH"}'
+   Top up with USDC:
+     curl -X POST https://api.constantinople.cloud/v1/billing/topup \
+       -H "Authorization: Bearer cst-YOUR-KEY" \
+       -H "Content-Type: application/json" \
+       -d '{"amount":10,"payment_method":"crypto","currency":"USDC"}'
+   Payments are on Base (Chain ID 8453). 1 USDC = 1 credit = $1.
+   Auto-credited after 3 block confirmations.
+
+   Check TAO deposit balance:
+     curl https://api.constantinople.cloud/v1/billing/tao-balance \
+       -H "Authorization: Bearer cst-YOUR-KEY"
 
 ENDPOINTS
-  POST /v1/chat/completions   Chat (OpenAI-compatible, streaming supported)
-  POST /v1/completions        Text completions
-  POST /v1/embeddings         Embeddings
-  GET  /v1/models             List models
-  GET  /v1/user/balance       Check balance
-  GET  /v1/user/usage         Usage stats
-  GET  /v1/pricing            Pricing info
-  GET  /health                Health check
+  POST /v1/chat/completions        Chat (OpenAI-compatible, streaming supported)
+  POST /v1/completions             Text completions
+  POST /v1/embeddings              Embeddings
+  GET  /v1/models                  List models
+  GET  /v1/user/balance            Check balance
+  GET  /v1/user/usage              Usage stats
+  GET  /v1/user/deposit-address    Get TAO deposit address
+  GET  /v1/billing/crypto-info     ETH/USDC deposit info (Base)
+  POST /v1/billing/topup           Top up with ETH or USDC
+  GET  /v1/billing/tao-balance     Check TAO deposit balance
+  GET  /v1/pricing                 Pricing info
+  GET  /health                     Health check
 
 PRICING
   Input:  $0.50 / 1M tokens
