@@ -6,12 +6,13 @@ import { DatasetPage } from './components/DatasetPage';
 import { DocsPage } from './components/DocsPage';
 import { StatusPage } from './components/StatusPage';
 import { APIPage } from './components/APIPage';
+import { MinerDocsPage } from './components/MinerDocsPage';
 import { Footer } from './components/Footer';
 import { VideoBackground } from './components/VideoBackground';
 
-export type Page = 'home' | 'dataset' | 'docs' | 'status' | 'api';
+export type Page = 'home' | 'dataset' | 'docs' | 'status' | 'api' | 'miners';
 
-const validPages: Page[] = ['home', 'dataset', 'docs', 'status', 'api'];
+const validPages: Page[] = ['home', 'dataset', 'docs', 'status', 'api', 'miners'];
 
 function getPageFromHash(): Page {
   const hash = window.location.hash.slice(1);
@@ -94,6 +95,17 @@ function App() {
               transition={{ duration: 0.35 }}
             >
               <APIPage />
+            </motion.div>
+          )}
+          {page === 'miners' && (
+            <motion.div
+              key="miners"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              <MinerDocsPage />
             </motion.div>
           )}
         </AnimatePresence>

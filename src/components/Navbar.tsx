@@ -5,6 +5,7 @@ import type { Page } from '../App';
 const navItems: { label: string; page: Page }[] = [
   { label: 'Dataset', page: 'dataset' },
   { label: 'About', page: 'docs' },
+  { label: 'Miners', page: 'miners' },
   { label: 'Status', page: 'status' },
 ];
 
