@@ -262,6 +262,58 @@ btcli subnet register --netuid 97 --wallet.name miner_wallet`}</CodeBlock>
           </p>
         </Section>
 
+        {/* FAQ */}
+        <Section title="Frequently asked questions">
+          <div className="space-y-6">
+            <div>
+              <h4 className="font-sans text-base text-g3-text mb-1">Do I need funding from the team to start mining?</h4>
+              <p>
+                No. Miners self-fund their registration on subnet 97. You need TAO in your wallet to
+                cover the registration cost -- this is standard Bittensor behavior. Once registered,
+                you start earning emissions based on your performance. There is no application process
+                or approval needed.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-sans text-base text-g3-text mb-1">What are the expected earnings?</h4>
+              <p>
+                Earnings depend on your hardware performance, uptime, and the total number of miners
+                competing for weight. Better hardware and consistent uptime translate directly to
+                higher emissions. Check{' '}
+                <a href="https://taostats.io/subnets/97" target="_blank" rel="noopener noreferrer" className="text-g3-accent hover:underline">
+                  taostats.io/subnets/97
+                </a>{' '}
+                for current emission rates and miner standings.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-sans text-base text-g3-text mb-1">Can I use a cloud GPU provider?</h4>
+              <p>
+                Yes. Many miners use cloud GPU providers like RunPod, Lambda, or Lium. Any provider
+                that gives you a dedicated GPU with sufficient VRAM and a stable network connection
+                will work. Make sure you have SSH access and can open a port for inbound connections.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-sans text-base text-g3-text mb-1">Can I run a fine-tuned or quantized model?</h4>
+              <p>
+                No. The verification protocol compares hidden states against the reference model
+                (Qwen2.5-7B-Instruct). Any modification to the model weights -- including fine-tuning,
+                quantization, or distillation -- will produce different hidden states and fail
+                verification. Run the exact model specified.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-sans text-base text-g3-text mb-1">How do I update my axon endpoint?</h4>
+              <p>
+                Your miner automatically registers its axon endpoint on-chain when it starts. If your
+                IP or port changes, restart the miner and it will update the metagraph. The validator
+                discovers miners through the on-chain metagraph -- no manual configuration needed.
+              </p>
+            </div>
+          </div>
+        </Section>
+
         {/* Resources */}
         <div className="mt-16 pt-8 border-t border-white/[0.08]">
           <h3 className="font-serif text-xl text-g3-text mb-4">Resources</h3>
