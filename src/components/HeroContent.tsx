@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useCopySkill } from '../hooks/use-copy-skill';
+import { useState, useCallback } from 'react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -26,7 +26,18 @@ const wordVariants = {
 
 export function HeroContent() {
   const headlineWords = ['Intelligence', 'belongs', 'free.'];
-  const { copy, copied } = useCopySkill();
+  const curlCommand = 'curl -fsSL https://constantinople.cloud/skill.txt';
+  const [copied, setCopied] = useState(false);
+
+  const copyCommand = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(curlCommand);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback: select the text
+    }
+  }, [curlCommand]);
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-8 lg:px-16 pt-20 text-center">
@@ -65,24 +76,20 @@ export function HeroContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.0 }}
-          className="flex items-center justify-center gap-6"
+          className="w-full max-w-xl mx-auto"
         >
           <button
-            onClick={copy}
-            className="px-7 py-3 border border-white/30 rounded-full font-sans text-sm text-g3-text hover:bg-white/10 hover:border-white/50 transition-all duration-250 tracking-wide"
+            onClick={copyCommand}
+            className="group w-full bg-white/5 border border-white/15 rounded-lg px-6 py-4 hover:bg-white/10 hover:border-white/30 transition-all duration-250 cursor-pointer"
           >
-            {copied ? 'Copied!' : 'Copy SKILL.md'}
+            <code className="font-mono text-sm sm:text-base text-g3-text">
+              {curlCommand}
+            </code>
+            <span className="block font-sans text-xs text-g3-text-secondary mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
+              {copied ? 'Copied!' : 'Click to copy'}
+            </span>
           </button>
         </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.3 }}
-          className="font-sans text-base text-g3-text-secondary leading-relaxed max-w-md mx-auto"
-        >
-          Blazing fast, always-on, agentic inference which you share: every query to Constantinople is first sanitized and then made public. Let intelligence be free.
-        </motion.p>
       </div>
     </div>
   );

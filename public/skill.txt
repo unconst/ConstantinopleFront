@@ -1,0 +1,48 @@
+Constantinople — Decentralized LLM Inference (Bittensor SN97)
+=============================================================
+
+1. GET A KEY
+   curl -X POST https://api.constantinople.cloud/v1/quickstart \
+     -H "Content-Type: application/json" \
+     -d '{"email":"you@example.com","password":"pick-a-password"}'
+
+   This returns your API key (starts with cst-) and a ready-to-paste curl.
+   Free tier: $1 credit on signup.
+
+2. QUERY
+   curl https://api.constantinople.cloud/v1/chat/completions \
+     -H "Authorization: Bearer cst-YOUR-KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"model":"Qwen/Qwen2.5-7B-Instruct","messages":[{"role":"user","content":"Hello!"}]}'
+
+   OpenAI-compatible. Drop-in replacement:
+     from openai import OpenAI
+     client = OpenAI(base_url="https://api.constantinople.cloud/v1", api_key="cst-YOUR-KEY")
+     print(client.chat.completions.create(model="Qwen/Qwen2.5-7B-Instruct", messages=[{"role":"user","content":"Hello!"}]).choices[0].message.content)
+
+3. ADD FUNDS
+   curl https://api.constantinople.cloud/v1/user/balance \
+     -H "Authorization: Bearer cst-YOUR-KEY"
+
+   To add credits, deposit TAO to your account deposit address:
+     curl https://api.constantinople.cloud/v1/user/deposit-address \
+       -H "Authorization: Bearer cst-YOUR-KEY"
+
+   TAO is auto-converted to credits at market rate.
+
+ENDPOINTS
+  POST /v1/chat/completions   Chat (OpenAI-compatible, streaming supported)
+  POST /v1/completions        Text completions
+  POST /v1/embeddings         Embeddings
+  GET  /v1/models             List models
+  GET  /v1/user/balance       Check balance
+  GET  /v1/user/usage         Usage stats
+  GET  /v1/pricing            Pricing info
+  GET  /health                Health check
+
+PRICING
+  Input:  $0.50 / 1M tokens
+  Output: $1.50 / 1M tokens
+
+Docs: https://api.constantinople.cloud/docs
+Site: https://www.constantinople.cloud
