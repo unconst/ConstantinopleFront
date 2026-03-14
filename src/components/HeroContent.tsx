@@ -67,13 +67,13 @@ export function HeroContent() {
         >
           <button
             onClick={copyCommand}
-            className="group w-full bg-white/5 border border-white/15 rounded-lg px-6 py-4 hover:bg-white/10 hover:border-white/30 transition-all duration-250 cursor-pointer"
+            className="group w-full bg-white/5 border border-white/15 rounded-lg px-5 py-3 hover:bg-white/10 hover:border-white/30 transition-all duration-250 cursor-pointer"
           >
-            <code className="font-mono text-sm sm:text-base text-g3-text">
+            <code className="font-mono text-xs sm:text-sm text-g3-text/70">
               {curlCommand}
             </code>
-            <span className="inline-block ml-3 text-sm opacity-60 group-hover:opacity-100 transition-opacity">
-              {copied ? '✅' : '📋'}
+            <span className="inline-block ml-3 text-xs opacity-40 group-hover:opacity-80 transition-opacity grayscale">
+              {copied ? '✓' : '⎘'}
             </span>
           </button>
         </motion.div>
