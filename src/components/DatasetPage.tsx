@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://gateway.constantinople.cloud';
+const API_BASE = 'https://gateway.constantinople.cloud';
 
 interface AuditChallenge {
   layer: number;

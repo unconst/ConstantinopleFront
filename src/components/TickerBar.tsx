@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://gateway.constantinople.cloud';
+const API_BASE = 'https://gateway.constantinople.cloud';
 
 interface MinerDetail {
   alive: boolean;
