@@ -7,7 +7,7 @@ import { DocsPage } from './components/DocsPage';
 import { StatusPage } from './components/StatusPage';
 import { APIPage } from './components/APIPage';
 import { MinerDocsPage } from './components/MinerDocsPage';
-import { Footer } from './components/Footer';
+
 import { VideoBackground } from './components/VideoBackground';
 
 export type Page = 'home' | 'dataset' | 'docs' | 'status' | 'api' | 'miners';
@@ -111,9 +111,6 @@ function App() {
         </AnimatePresence>
       </div>
 
-      <div className="relative z-10">
-        <Footer onNavigate={navigate} />
-      </div>
     </main>
   );
 }

@@ -42,19 +42,6 @@ export function HeroContent() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-8 lg:px-16 pt-20 text-center">
       <div className="max-w-4xl mx-auto w-full space-y-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className="flex items-center justify-center gap-4"
-        >
-          <div className="w-5 h-px bg-g3-text-secondary" />
-          <span className="font-sans text-xs text-g3-text-secondary tracking-widest uppercase">
-            Constantinople — Bittensor SN97
-          </span>
-          <div className="w-5 h-px bg-g3-text-secondary" />
-        </motion.div>
-
         <motion.h1
           variants={containerVariants}
           initial="hidden"
@@ -85,8 +72,8 @@ export function HeroContent() {
             <code className="font-mono text-sm sm:text-base text-g3-text">
               {curlCommand}
             </code>
-            <span className="block font-sans text-xs text-g3-text-secondary mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
-              {copied ? 'Copied!' : 'Click to copy'}
+            <span className="inline-block ml-3 text-sm opacity-60 group-hover:opacity-100 transition-opacity">
+              {copied ? '✅' : '📋'}
             </span>
           </button>
         </motion.div>
