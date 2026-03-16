@@ -7,7 +7,13 @@ interface NavbarProps {
   onNavigate: (page: Page) => void;
 }
 
-export function Navbar({ onNavigate }: NavbarProps) {
+export function Navbar({ activePage, onNavigate }: NavbarProps) {
+  const navItems: { page: Page; label: string }[] = [
+    { page: 'status', label: 'Status' },
+    { page: 'api', label: 'API' },
+    { page: 'docs', label: 'Docs' },
+    { page: 'miners', label: 'Miners' },
+  ];
 
   return (
     <motion.header
@@ -28,7 +34,21 @@ export function Navbar({ onNavigate }: NavbarProps) {
           <TickerBar />
         </div>
 
-        <div className="z-10" />
+        <nav className="flex items-center gap-6 z-10">
+          {navItems.map(({ page, label }) => (
+            <button
+              key={page}
+              onClick={() => onNavigate(page)}
+              className={`text-sm font-medium transition-colors ${
+                activePage === page
+                  ? 'text-g3-accent'
+                  : 'text-g3-muted hover:text-g3-text'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
 
       </div>
 
