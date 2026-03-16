@@ -5,6 +5,7 @@ const GATEWAY_URL = 'https://gateway.constantinople.cloud';
 const API_URL = 'https://api.constantinople.cloud';
 const POLL_INTERVAL = 8000;
 const HISTORY_LEN = 60;
+const CHAIN_POLL = 60000;
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -109,12 +110,28 @@ function usePolledData<T>(url: string, interval: number, enabled = true) {
   return { data, error, failures };
 }
 
+interface SubnetPool { alpha_out: number; alpha_in: number; tao_in: number; volume: number; price: number }
+interface SubnetData {
+  netuid: number; network: string; block: number; n: number; max_n: number;
+  registration_cost: number | null; tempo: number; immunity_period: number;
+  max_validators: number; weights_rate_limit: number; commit_reveal_enabled: boolean;
+  registration_allowed: boolean; total_stake: number; total_emission: number;
+  validator_permits: number; pool: SubnetPool | null;
+  neurons: Array<{ uid: number; incentive: number; stake: number; emission: number; dividends: number; vtrust: number }>;
+}
+interface AuditorMiner {
+  uid: number; avg_cosine: number; passed_challenges: number; failed_challenges: number;
+  voided_challenges: number; is_suspect: boolean; avg_tps: number; avg_ttft_ms: number;
+}
+interface AuditorData { epoch: number; total_audits: number; miners: AuditorMiner[] }
+
 function useGatewayDashboard() {
   const { data: health, error, failures } = usePolledData<GatewayHealth>(`${GATEWAY_URL}/health`, POLL_INTERVAL);
   const { data: network } = usePolledData<NetworkInfo>(`${GATEWAY_URL}/v1/network`, 60000);
   const { data: apiHealth } = usePolledData<ApiHealth>(`${API_URL}/health`, 30000);
   const { data: datasetStats } = usePolledData<DatasetStats>(`${API_URL}/v1/dataset/stats`, 60000);
-
+  const { data: subnet } = usePolledData<SubnetData>(`${API_URL}/v1/subnet`, CHAIN_POLL);
+  const { data: auditor } = usePolledData<AuditorData>(`${API_URL}/v1/auditor`, POLL_INTERVAL);
   // History buffers
   const [tpsHistory, setTpsHistory] = useState<number[]>([]);
   const [latencyHistory, setLatencyHistory] = useState<number[]>([]);
@@ -135,7 +152,7 @@ function useGatewayDashboard() {
     setOrganicHistory(p => [...p.slice(-(HISTORY_LEN - 1)), health.total_organic]);
   }, [health]);
 
-  return { health, network, apiHealth, datasetStats, error, failures, tpsHistory, latencyHistory, minerHistory, reliabilityHistory, organicHistory };
+  return { health, network, apiHealth, datasetStats, subnet, auditor, error, failures, tpsHistory, latencyHistory, minerHistory, reliabilityHistory, organicHistory };
 }
 
 // ─── Utility ────────────────────────────────────────────────────────────
@@ -241,7 +258,7 @@ type SortKey = 'uid' | 'avg_tps' | 'avg_ttft_ms' | 'reliability' | 'served' | 'w
 // ─── Main Page ──────────────────────────────────────────────────────────
 
 export function StatusPage() {
-  const { health, network, apiHealth, datasetStats, error, failures, tpsHistory, latencyHistory, minerHistory, reliabilityHistory, organicHistory } = useGatewayDashboard();
+  const { health, network, apiHealth, datasetStats, subnet, auditor, error, failures, tpsHistory, latencyHistory, minerHistory, reliabilityHistory, organicHistory } = useGatewayDashboard();
 
   const [sortKey, setSortKey] = useState<SortKey>('weight');
   const [sortAsc, setSortAsc] = useState(false);
@@ -428,6 +445,33 @@ export function StatusPage() {
           </>
         )}
 
+        {/* ── Subnet Economics ── */}
+        {subnet?.pool && (
+          <>
+            <SectionTitle>Subnet Economics</SectionTitle>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+              <MetricCard label="Alpha Price" value={`${subnet.pool.price.toFixed(6)} \u03C4`} sub="Moving average" small />
+              <MetricCard label="Pool Volume" value={`${fmt(subnet.pool.volume, 0)} \u03C4`} sub="24h subnet volume" small />
+              <MetricCard label="Alpha Supply" value={fmt(subnet.pool.alpha_out, 0)} sub="In circulation" small />
+              <MetricCard label="TAO Locked" value={`${subnet.pool.tao_in.toFixed(2)} \u03C4`} sub="In AMM pool" small />
+            </div>
+          </>
+        )}
+
+        {/* ── Hidden State Verification ── */}
+        {auditor && auditor.total_audits > 0 && (
+          <>
+            <SectionTitle>Hidden State Verification</SectionTitle>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
+              <MetricCard label="Total Audits" value={fmt(auditor.total_audits)} sub={`Auditor epoch ${auditor.epoch}`} small />
+              <MetricCard label="Avg Cosine" value={auditor.miners.length > 0 ? (auditor.miners.reduce((s, m) => s + m.avg_cosine, 0) / auditor.miners.length).toFixed(4) : '\u2014'} sub="Cross-miner similarity" small />
+              <MetricCard label="Passed" value={`${auditor.miners.reduce((s, m) => s + m.passed_challenges, 0)}`} sub="Challenges passed" small />
+              <MetricCard label="Failed" value={`${auditor.miners.reduce((s, m) => s + m.failed_challenges, 0)}`} sub="Challenges failed" small />
+              <MetricCard label="Voided" value={`${auditor.miners.reduce((s, m) => s + m.voided_challenges, 0)}`} sub="Inconclusive (CPU/GPU)" small />
+            </div>
+          </>
+        )}
+
         {/* ── On-Chain & Network Info ── */}
         {(network || apiHealth || datasetStats) && (
           <>
@@ -454,11 +498,12 @@ export function StatusPage() {
                 {network?.hyperparameters ? (
                   <>
                     <StatRow label="Tempo" value={`${network.hyperparameters.tempo ?? '?'} blocks`} />
-                    <StatRow label="Max UIDs" value={`${network.hyperparameters.max_uids ?? '?'}`} />
                     <StatRow label="Max validators" value={`${network.hyperparameters.max_validators ?? '?'}`} />
                     <StatRow label="Immunity period" value={`${network.hyperparameters.immunity_period ?? '?'}`} />
                     <StatRow label="Weights rate limit" value={`${network.hyperparameters.weights_rate_limit ?? '?'} blocks`} />
                     <StatRow label="Commit-reveal" value={network.hyperparameters.commit_reveal_weights_enabled ? 'Enabled' : 'Disabled'} ok={!!network.hyperparameters.commit_reveal_weights_enabled} />
+                    <StatRow label="Registration" value={network.hyperparameters.registration_allowed ? 'Open' : 'Closed'} ok={!!network.hyperparameters.registration_allowed} />
+                    <StatRow label="Liquid alpha" value={network.hyperparameters.liquid_alpha_enabled ? 'Enabled' : 'Disabled'} />
                   </>
                 ) : <p className="text-xs text-g3-text-muted">Loading...</p>}
               </Card>
