@@ -658,6 +658,30 @@ export function StatusPage() {
                 </table>
               </div>
             </Card>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-2 mb-4">
+              {sortedMiners.map(m => (
+                <div key={m.uid} className={`border border-white/[0.08] rounded-lg p-3 bg-white/[0.02] ${!m.alive ? 'opacity-40' : ''}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Dot ok={m.alive} />
+                      <span className="font-mono text-sm font-semibold text-g3-text">UID {m.uid}</span>
+                      {m.is_suspect && <span className="text-[10px] text-amber-400">!</span>}
+                    </div>
+                    {m.weight != null && m.weight > 0 && (
+                      <span className="font-mono text-xs text-g3-accent font-medium">{(m.weight * 100).toFixed(1)}%</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <MobileStat label="TPS" value={m.avg_tps > 0 ? m.avg_tps.toFixed(0) : '\u2014'} />
+                    <MobileStat label="TTFT" value={m.avg_ttft_ms > 0 ? `${m.avg_ttft_ms.toFixed(0)}ms` : '\u2014'} />
+                    <MobileStat label="Rel" value={`${(m.reliability * 100).toFixed(0)}%`} />
+                    <MobileStat label="Audit" value={m.pass_rate != null ? `${(m.pass_rate * 100).toFixed(0)}%` : '\u2014'} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         )}
 
@@ -693,6 +717,15 @@ function Td({ children, mono, muted }: { children?: React.ReactNode; mono?: bool
 
 function Tr({ children, dimmed }: { children: React.ReactNode; dimmed?: boolean }) {
   return <tr className={`border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors ${dimmed ? 'opacity-40' : ''}`}>{children}</tr>;
+}
+
+function MobileStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white/[0.03] rounded px-2 py-1 text-center">
+      <p className="font-mono text-xs text-g3-text">{value}</p>
+      <p className="font-sans text-[9px] text-g3-text-muted">{label}</p>
+    </div>
+  );
 }
 
 function ServicePill({ label, ok, detail }: { label: string; ok: boolean; detail?: string }) {
