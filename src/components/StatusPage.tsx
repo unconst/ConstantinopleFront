@@ -141,7 +141,7 @@ function useGatewayDashboard() {
 
   useEffect(() => {
     if (!health) return;
-    const alive = health.miners_detail.filter(m => m.alive);
+    const alive = health.miners_detail.filter(m => m.alive && m.avg_tps > 0);
     const avgTps = alive.length > 0 ? alive.reduce((s, m) => s + m.avg_tps, 0) / alive.length : 0;
     const avgTtft = alive.length > 0 ? alive.reduce((s, m) => s + m.avg_ttft_ms, 0) / alive.length : 0;
     const avgRel = alive.length > 0 ? alive.reduce((s, m) => s + m.reliability, 0) / alive.length * 100 : 0;
@@ -269,16 +269,17 @@ export function StatusPage() {
 
   // Derived metrics
   const aliveMiners = useMemo(() => health?.miners_detail.filter(m => m.alive) ?? [], [health]);
-  const avgTps = aliveMiners.length > 0 ? aliveMiners.reduce((s, m) => s + m.avg_tps, 0) / aliveMiners.length : 0;
-  const maxTps = aliveMiners.length > 0 ? Math.max(...aliveMiners.map(m => m.avg_tps)) : 0;
-  const totalTps = aliveMiners.reduce((s, m) => s + m.avg_tps, 0);
-  const avgTtft = aliveMiners.length > 0 ? aliveMiners.reduce((s, m) => s + m.avg_ttft_ms, 0) / aliveMiners.length : 0;
+  const activeMiners = useMemo(() => aliveMiners.filter(m => m.avg_tps > 0), [aliveMiners]);
+  const avgTps = activeMiners.length > 0 ? activeMiners.reduce((s, m) => s + m.avg_tps, 0) / activeMiners.length : 0;
+  const maxTps = activeMiners.length > 0 ? Math.max(...activeMiners.map(m => m.avg_tps)) : 0;
+  const totalTps = activeMiners.reduce((s, m) => s + m.avg_tps, 0);
+  const avgTtft = activeMiners.length > 0 ? activeMiners.reduce((s, m) => s + m.avg_ttft_ms, 0) / activeMiners.length : 0;
   const p50Ttft = useMemo(() => {
-    if (aliveMiners.length === 0) return 0;
-    const sorted = [...aliveMiners].sort((a, b) => a.avg_ttft_ms - b.avg_ttft_ms);
+    if (activeMiners.length === 0) return 0;
+    const sorted = [...activeMiners].sort((a, b) => a.avg_ttft_ms - b.avg_ttft_ms);
     return sorted[Math.floor(sorted.length / 2)]?.avg_ttft_ms ?? 0;
-  }, [aliveMiners]);
-  const avgReliability = aliveMiners.length > 0 ? aliveMiners.reduce((s, m) => s + m.reliability, 0) / aliveMiners.length * 100 : 0;
+  }, [activeMiners]);
+  const avgReliability = activeMiners.length > 0 ? activeMiners.reduce((s, m) => s + m.reliability, 0) / activeMiners.length * 100 : 0;
   const challengeRate = health && health.challenges.total > 0 ? health.challenges.passed / health.challenges.total * 100 : 0;
   const totalServed = health?.miners_detail.reduce((s, m) => s + m.served, 0) ?? 0;
   const totalFailed = health?.miners_detail.reduce((s, m) => s + m.failed, 0) ?? 0;

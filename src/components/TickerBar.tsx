@@ -28,10 +28,11 @@ interface Metrics {
 
 function compute(data: HealthData): Metrics {
   const alive = data.miners_detail.filter(m => m.alive);
-  const n = alive.length;
-  const avgTtft = n > 0 ? alive.reduce((s, m) => s + m.avg_ttft_ms, 0) / n : 0;
-  const avgTps = n > 0 ? alive.reduce((s, m) => s + m.avg_tps, 0) / n : 0;
-  const avgRel = n > 0 ? alive.reduce((s, m) => s + m.reliability, 0) / n * 100 : 0;
+  const withData = alive.filter(m => m.avg_tps > 0);
+  const n = withData.length;
+  const avgTtft = n > 0 ? withData.reduce((s, m) => s + m.avg_ttft_ms, 0) / n : 0;
+  const avgTps = n > 0 ? withData.reduce((s, m) => s + m.avg_tps, 0) / n : 0;
+  const avgRel = n > 0 ? withData.reduce((s, m) => s + m.reliability, 0) / n * 100 : 0;
   const total = data.total_organic + data.total_synthetic;
 
   return {
