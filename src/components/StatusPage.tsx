@@ -484,10 +484,11 @@ export function StatusPage() {
                   <>
                     <StatRow label="Subnet" value={`SN${network.netuid}`} />
                     <StatRow label="Network" value={network.network} />
-                    <StatRow label="Reg cost" value={network.registration_cost_tao != null ? `${network.registration_cost_tao.toFixed(4)} TAO` : 'N/A'} />
-                    <StatRow label="Neurons" value={`${network.n_neurons}`} />
+                    <StatRow label="Reg cost" value={subnet?.registration_cost != null ? `${subnet.registration_cost.toFixed(4)} TAO` : network.registration_cost_tao != null ? `${network.registration_cost_tao.toFixed(4)} TAO` : 'N/A'} />
+                    <StatRow label="Neurons" value={subnet ? `${subnet.n} / ${subnet.max_n}` : `${network.n_neurons}`} />
                     <StatRow label="Validators" value={`${network.n_validators}`} />
                     <StatRow label="Miners" value={`${network.n_miners}`} />
+                    {subnet && <StatRow label="Block" value={`#${subnet.block.toLocaleString()}`} />}
                   </>
                 ) : <p className="text-xs text-g3-text-muted">Loading...</p>}
               </Card>
